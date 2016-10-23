@@ -45,11 +45,4 @@
 /distributedSingle
 /DistSTOClient
 /DistSTOServer
-/DistSTO.cc
-/DistSTO.h
-/DistSTO_constants.cc
-/DistSTO_constants.h
-/DistSTO_types.cc
-/DistSTO_types.h
-/DistSTO_server.skeleton.cc
 /unit-dist-tbox

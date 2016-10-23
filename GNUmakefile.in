@@ -93,8 +93,9 @@ MASSTREE_OBJS = $(MASSTREEDIR)/kvio.o \
 	$(MASSTREEDIR)/checkpoint.o \
 	$(MASSTREEDIR)/string_slice.o
 
-DISTSTO_SRC := DistSTO.cpp DistSTO_constants.cpp DistSTO_types.cpp
-DISTSTO_DEPS := $(patsubst %.cpp,%.o, $(DISTSTO_SRC))
+DISTSTO_GEN := DistSTO.cc DistSTO_constants.cpp DistSTO_types.cpp DistSTO.h DistSTO_constants.h DistSTO_types.h
+DISTSTO_SRC := DistSTO.cc DistSTO_constants.cc DistSTO_types.cc
+DISTSTO_DEPS := $(patsubst %.cc,%.o, $(DISTSTO_SRC))
 DISTSTO_OBJS := $(DISTSTO_DEPS)
 
 STO_OBJS = Packer.o Transaction.o TRcu.o MassTrans.o clp.o $(LIBOBJS) $(DISTSTO_OBJS)
@@ -184,14 +185,14 @@ predicates: predicates.o $(STO_DEPS)
 hashtable_nostm: hashtable_nostm.o $(STO_DEPS)
 	$(CXX) $(CXXFLAGS) $(OPTFLAGS) -o $@ $< $(STO_OBJS) $(LDFLAGS) $(LIBS)
 
-.PHONY: thrift
-thrift: DistSTO.thrift
+.PHONY: diststo-thrift
+diststo-thrift: DistSTO.thrift
 	thrift --gen cpp $<
 	for f in gen-cpp/*.cpp; do mv "$$f" $$(basename "$${f%.cpp}.cc"); done
 	mv gen-cpp/*.h .
 	rmdir gen-cpp
 
-DistSTOClient: DistSTOClient.o $(DISTSTO_OBJS)
+DistSTOClient: DistSTOClient.o $(STO_DEPS)
 	$(CXX) $(CXXFLAGS) $(OPTFLAGS) -o $@ $< $(STO_OBJS) $(LDFLAGS) $(LIBS)
 
 $(MASSTREE_OBJS): masstree ;
@@ -226,8 +227,6 @@ stamp-h: config.h.in config.status
 clean:
 	rm -f $(PROGRAMS) *.o
 	rm -rf .deps *.dSYM
-	rm -f $(DISTSTO_GEN_SRC)
-	rm -f $(DISTSTO_GEN_HEADERS)
 	$(MAKE) -C $(MASSTREEDIR) clean
 
 DEPFILES := $(wildcard $(DEPSDIR)/*.d)
