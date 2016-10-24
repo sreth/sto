@@ -246,11 +246,15 @@ void testStringWrapper() {
 }
 
 int main() {
+
+    Sto::initialize_dist_sto(0, 2);
+
     testSimpleInt();
     testSimpleString();
     testConcurrentInt();
     testOpacity1();
     testNoOpacity1();
     testStringWrapper();
+
     return 0;
 }

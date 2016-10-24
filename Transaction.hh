@@ -673,12 +673,34 @@ using boost::shared_ptr;
 class Sto {
   
 public:
-    static int machineID; 
-    static DistSTOServer *server;
-    static std::vector<DistSTOClient*> clients;
-    static std::map<int64_t, std::vector<int64_t>> tuid_objids;
 
-    static void initializeDistSTO(int thisMachineID, int numOfPeers);
+/******************** Start of Distributed STO ********************/ 
+
+    // used to uniquely identify this server
+    static int server_id;
+
+    // server that handles all incoming RPCs
+    static DistSTOServer *server;
+
+    // a client for each peer that this server talk to
+    static std::vector<DistSTOClient*> clients;
+
+    // used to assign a unique id to each registered object
+    static int objid;
+
+    // map object id to object
+    static std::map<int64_t, TObject*> objid_obj_map;
+
+    // map transaction id to modified objects
+    static std::map<int64_t, std::vector<int64_t>> tuid_objids_map;
+
+    // this is called once to initialize the system
+    static void initialize_dist_sto(int this_server_id, int total_servers);
+    
+    // assign a unique id to the registered object
+    static void register_obj(TObject *obj);
+
+/******************** End of Distributed STO ********************/ 
 
     static Transaction* transaction() {
         if (!TThread::txn)
@@ -799,12 +821,14 @@ class DistSTOServer : virtual public DistSTOIf {
 
   bool lock(const int64_t tuid, const std::vector<int64_t> & objids) {
     // This tuid should not exist yet in tuid_objids map
-    always_assert(Sto::tuid_objids.find(tuid) == Sto::tuid_objids.end());
+    assert(Sto::tuid_objids_map.find(tuid) == Sto::tuid_objids_map.end());
     // record tuid for later use
-    Sto::tuid_objids[tuid] = objids;
+    Sto::tuid_objids_map[tuid] = objids;
     // lock all modified objects
     for (auto objid : objids) {
-      
+      // this object should already be registered
+      assert(Sto::objid_obj_map.find(objid) != Sto::objid_obj_map.end());
+       
     } 
   }
 
@@ -817,7 +841,7 @@ class DistSTOServer : virtual public DistSTOIf {
   }
 
   void abort(const int64_t tuid) {
-    printf("abort\n");
+    printf("abort %d\n", tuid);
   }
 };
 
