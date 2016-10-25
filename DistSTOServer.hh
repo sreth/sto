@@ -17,18 +17,23 @@ using boost::shared_ptr;
 
 class DistSTOServer : virtual public DistSTOIf {
 
-
  private:
+  int _id;
   TSimpleServer *_server;
-
  public:
-  DistSTOServer(int port) {
+
+  DistSTOServer(int id, int port) {
+    _id = id;
     shared_ptr<DistSTOServer> handler(this);
     shared_ptr<TProcessor> processor(new DistSTOProcessor(handler));
     shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
     shared_ptr<TTransportFactory> transportFactory(new TBufferedTransportFactory());
     shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
     _server = new TSimpleServer(processor, serverTransport, transportFactory, protocolFactory); 
+  }
+
+  int id() {
+    return _id;
   }
 
   void serve() {
@@ -55,53 +60,8 @@ class DistSTOServer : virtual public DistSTOIf {
     for (auto objid : objids) {
       // this object should already be registered
       assert(Sto::objid_obj_map.find(objid) != Sto::objid_obj_map.end());
-       
-    } 
-    return false;
-
-/*********************************************************************************/
-
-/*
-    bool try_lock(TransItem& item, TransactionTid::type& vers) {
-#if STO_SORT_WRITESET
-        (void) item;
-        TransactionTid::lock(vers, threadid_);
-        return true;
-#else
-        // This function will eventually help us track the commit TID when we
-        // have no opacity, or for GV7 opacity.
-        unsigned n = 0;
-        while (1) {
-            if (TransactionTid::try_lock(vers, threadid_))
-                return true;
-            ++n;
-# if STO_SPIN_EXPBACKOFF
-            if (item.has_read() || n == STO_SPIN_BOUND_WRITE) {
-#  if STO_DEBUG_ABORTS
-                abort_version_ = vers;
-#  endif
-                return false;
-            }
-            if (n > 3)
-                for (unsigned x = 1 << std::min(15U, n - 2); x; --x)
-                    relax_fence();
-# else
-            if (item.has_read() || n == (1 << STO_SPIN_BOUND_WRITE)) {
-#  if STO_DEBUG_ABORTS
-                abort_version_ = vers;
-#  endif
-                return false;
-            }
-# endif
-            relax_fence();
-        }
-#endif
+      
     }
-*/
-
-/*************************************************************************************/
-
-
   }
 
   bool check(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions) {

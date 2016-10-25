@@ -14,6 +14,7 @@
 #include <sstream>
 
 #include "DistSTO.h"
+#include <unordered_map>
 
 #ifndef STO_PROFILE_COUNTERS
 #define STO_PROFILE_COUNTERS 0
@@ -663,12 +664,11 @@ class Sto {
 public:
 
 /******************** Start of Distributed STO ********************/ 
-
-    // used to uniquely identify this server
-    static int server_id;
-
     // server that handles all incoming RPCs
     static DistSTOServer *server;
+
+    // total number of servers in the network
+    static int total_servers;
 
     // a client for each peer that this server talks to
     static std::vector<DistSTOClient*> clients;
@@ -677,19 +677,22 @@ public:
     static int objid;
 
     // map object id to object
-    static std::map<int64_t, TObject*> objid_obj_map;
+    static std::unordered_map<int64_t, TObject*> objid_obj_map;
 
     // map object to its id
-    static std::map<TObject*, int64_t> obj_objid_map;
+    static std::unordered_map<TObject*, int64_t> obj_objid_map;
 
     // map transaction id to modified objects
-    static std::map<int64_t, std::vector<int64_t>> tuid_objids_map;
+    static std::unordered_map<int32_t, std::vector<int64_t>> tuid_objids_map;
 
     // this is called once to initialize the system
     static void initialize_dist_sto(int this_server_id, int total_servers);
     
     // assign a unique id to the registered object
     static void register_obj(TObject *obj);
+
+    // used to determine if an object is local
+    static bool is_local_obj(TObject *obj);
 
 /******************** End of Distributed STO ********************/ 
 

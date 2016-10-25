@@ -282,14 +282,18 @@ bool Transaction::try_commit() {
         state_ = s_committing_locked;
         auto writeset_end = writeset + nwriteset;
         for (auto it = writeset; it != writeset_end; ) {
-            TransItem* me = &tset_[*it / tset_chunk][*it % tset_chunk];
-            // if remote
-		
+            TransItem* me = &tset_[*it / tset_chunk][*it % tset_chunk];		
+            // if local then lock the object as usual
+            if (Sto::is_local_obj(me->owner())) {
+                if (!me->owner()->lock(*me, *this)) {
+                    mark_abort_because(me, "commit lock");
+                    goto abort;
+                }
+            } else {
+                // make RPCs to other servers that own the objects
+                 
+                
 
-            // if local
-            if (!me->owner()->lock(*me, *this)) {
-                mark_abort_because(me, "commit lock");
-                goto abort;
             }
             me->__or_flags(TransItem::lock_bit);
             ++it;
@@ -438,27 +442,25 @@ std::ostream& operator<<(std::ostream& w, const TransactionGuard& txn) {
     txn.print(w);
     return w;
 }
-
-int Sto::server_id = -1; 
+ 
+int Sto::total_servers = 0;
 DistSTOServer* Sto::server = nullptr;
 std::vector<DistSTOClient*> Sto::clients;
 int Sto::objid = 0; 
-std::map<int64_t, TObject*> Sto::objid_obj_map;
-std::map<TObject*, int64_t> Sto::obj_objid_map;
-std::map<int64_t, std::vector<int64_t>> Sto::tuid_objids_map;
+std::unordered_map<int64_t, TObject*> Sto::objid_obj_map;
+std::unordered_map<TObject*, int64_t> Sto::obj_objid_map;
+std::unordered_map<int32_t, std::vector<int64_t>> Sto::tuid_objids_map;
 
 void* runServer(void *server) {
     ((DistSTOServer *) server)->serve();
     return nullptr;
 }
 
-void Sto::initialize_dist_sto(int this_server_id, int total_servers) {
-
-    assert(this_server_id >= 0 && this_server_id < total_servers);
-
-    // Use to uniquely identify this server
-    Sto::server_id = this_server_id;
-
+void Sto::initialize_dist_sto(int server_id, int total_servers) {
+    assert(server_id >= 0 && server_id < total_servers);
+    // Initialize the server that handle all RPCs
+    Sto::server = new DistSTOServer(server_id, 9090);
+    Sto::total_servers = total_servers;
     // Initialize a client for each peer this server talks to
     for (int i = 0; i < total_servers; i++) {
 	// XXX Need to change host and port later
@@ -467,15 +469,22 @@ void Sto::initialize_dist_sto(int this_server_id, int total_servers) {
         boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
         Sto::clients.push_back(new DistSTOClient(protocol));
     }
-
-    // start the server itself (this returns immediately after the server starts)
+    // start the server then returns immediately
     pthread_t thread;
-    Sto::server = new DistSTOServer(9090);
     pthread_create(&thread, NULL, runServer, Sto::server);
 }
 
 void Sto::register_obj(TObject *obj) {
-    int64_t id = Sto::objid++;
-    objid_obj_map[id] = obj;
-    obj_objid_map[obj] = id; 
+    assert(Sto::obj_objid_map.find(obj) == Sto::obj_objid_map.end());
+    // XXX: might need lock to protect Sto::objid
+    int64_t objid = Sto::objid++;
+    obj_objid_map[obj] = objid;
+    objid_obj_map[objid] = obj;
+}
+
+bool Sto::is_local_obj(TObject *obj) {
+    std::unordered_map<TObject*, int64_t>::const_iterator objid = Sto::obj_objid_map.find(obj);
+    // this obj must already be registered
+    assert(objid != Sto::obj_objid_map.end());
+    return objid->second % Sto::total_servers == Sto::server->id();
 }
