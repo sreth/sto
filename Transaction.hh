@@ -14,12 +14,6 @@
 #include <sstream>
 
 #include "DistSTO.h"
-#include <thrift/protocol/TBinaryProtocol.h>
-#include <thrift/server/TSimpleServer.h>
-#include <thrift/transport/TServerSocket.h>
-#include <thrift/transport/TBufferTransports.h>
-#include <thrift/transport/TSocket.h>
-#include <thrift/transport/TBufferTransports.h>
 
 #ifndef STO_PROFILE_COUNTERS
 #define STO_PROFILE_COUNTERS 0
@@ -664,12 +658,6 @@ private:
 
 class DistSTOServer;
 
-using namespace ::apache::thrift;
-using namespace ::apache::thrift::protocol;
-using namespace ::apache::thrift::transport;
-using namespace ::apache::thrift::server;
-using boost::shared_ptr;
-
 class Sto {
   
 public:
@@ -795,54 +783,6 @@ public:
         // XXX: we might want a nonopaque_bit in here too.
         return TransactionTid::increment_value;
     }
-};
-
-class DistSTOServer : virtual public DistSTOIf {
- private:
-  TSimpleServer *_server;
-
- public:
-  DistSTOServer(int port) {
-    shared_ptr<DistSTOServer> handler(this);
-    shared_ptr<TProcessor> processor(new DistSTOProcessor(handler));
-    shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
-    shared_ptr<TTransportFactory> transportFactory(new TBufferedTransportFactory());
-    shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
-    _server = new TSimpleServer(processor, serverTransport, transportFactory, protocolFactory); 
-  }
-
-  void serve() {
-    _server->serve();
-  }
-
-  void read(std::string& _return, const int64_t objid) {
-    printf("read\n");
-  }
-
-  bool lock(const int64_t tuid, const std::vector<int64_t> & objids) {
-    // This tuid should not exist yet in tuid_objids map
-    assert(Sto::tuid_objids_map.find(tuid) == Sto::tuid_objids_map.end());
-    // record tuid for later use
-    Sto::tuid_objids_map[tuid] = objids;
-    // lock all modified objects
-    for (auto objid : objids) {
-      // this object should already be registered
-      assert(Sto::objid_obj_map.find(objid) != Sto::objid_obj_map.end());
-       
-    } 
-  }
-
-  bool check(const int64_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions) {
-    printf("check\n");
-  }
-
-  void install(const int64_t tuid, const int64_t tid, const std::vector<std::string> & written_values) {
-    printf("install\n");
-  }
-
-  void abort(const int64_t tuid) {
-    printf("abort %d\n", tuid);
-  }
 };
 
 class TestTransaction {

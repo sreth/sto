@@ -6,6 +6,7 @@
 #include "Transaction.hh"
 #include "DistTBox.hh"
 #include "StringWrapper.hh"
+#include "DistSTOServer.hh"
 
 #define GUARDED if (TransactionGuard tguard{})
 
