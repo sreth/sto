@@ -60,7 +60,46 @@ class DistSTOServer : virtual public DistSTOIf {
     for (auto objid : objids) {
       // this object should already be registered
       assert(Sto::objid_obj_map.find(objid) != Sto::objid_obj_map.end());
-      
+      // this object should be local
+      assert(Sto::is_local_obj(objid));
+
+
+#if STO_SORT_WRITESET
+      //XXX: figure out how to deal with ver
+      TransactionTid::lock(vers, threadid_);
+      continue;
+#else
+        // This function will eventually help us track the commit TID when we
+        // have no opacity, or for GV7 opacity.
+        unsigned n = 0;
+        while (1) {
+            if (TransactionTid::try_lock(vers, threadid_))
+                return true;
+            ++n;
+# if STO_SPIN_EXPBACKOFF
+            if (item.has_read() || n == STO_SPIN_BOUND_WRITE) {
+#  if STO_DEBUG_ABORTS
+                abort_version_ = vers;
+#  endif
+                return false;
+            }
+            if (n > 3)
+                for (unsigned x = 1 << std::min(15U, n - 2); x; --x)
+                    relax_fence();
+# else
+            if (item.has_read() || n == (1 << STO_SPIN_BOUND_WRITE)) {
+#  if STO_DEBUG_ABORTS
+                abort_version_ = vers;
+#  endif
+                return false;
+            }
+# endif
+            relax_fence();
+        }
+#endif
+     
+
+
     }
   }
 

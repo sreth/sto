@@ -664,6 +664,7 @@ class Sto {
 public:
 
 /******************** Start of Distributed STO ********************/ 
+
     // server that handles all incoming RPCs
     static DistSTOServer *server;
 
@@ -693,6 +694,7 @@ public:
 
     // used to determine if an object is local
     static bool is_local_obj(TObject *obj);
+    static bool Sto::is_local_obj(int64_t objid);
 
 /******************** End of Distributed STO ********************/ 
 

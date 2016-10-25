@@ -488,3 +488,10 @@ bool Sto::is_local_obj(TObject *obj) {
     assert(objid != Sto::obj_objid_map.end());
     return objid->second % Sto::total_servers == Sto::server->id();
 }
+
+bool Sto::is_local_obj(int64_t objid) {
+    std::unordered_map<int64_t, TObject*>::const_iterator obj = Sto::objid_obj_map.find(objid);
+    // this obj must already be registered
+    assert(obj != Sto::objid_obj_map.end());
+    return objid % Sto::total_servers == Sto::server->id();
+}
