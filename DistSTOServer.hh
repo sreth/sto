@@ -51,7 +51,7 @@ class DistSTOServer : virtual public DistSTOIf {
     memcpy((void *) _return.data(), (void *) &val, sizeof(box_type::read_type));
   }
 
-  bool lock(const int32_t tuid, const std::vector<int64_t> & objids) {
+  bool lock(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & keys) {
     // This tuid should not exist yet in tuid_objids map
     assert(Sto::tuid_objids_map.find(tuid) == Sto::tuid_objids_map.end());
     // record tuid for later use
