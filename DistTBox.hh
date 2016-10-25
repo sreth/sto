@@ -83,6 +83,10 @@ public:
         return txn.try_lock(item, vers_);
     }
 
+    bool dist_lock(TransItem& item) {
+
+    }
+
     bool check(TransItem& item, Transaction&) override {
         return item.check_version(vers_);
     }

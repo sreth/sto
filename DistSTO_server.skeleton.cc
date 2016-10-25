@@ -25,22 +25,22 @@ class DistSTOHandler : virtual public DistSTOIf {
     printf("read\n");
   }
 
-  bool lock(const int64_t tuid, const std::vector<int64_t> & objids) {
+  bool lock(const int32_t tuid, const std::vector<int64_t> & objids) {
     // Your implementation goes here
     printf("lock\n");
   }
 
-  bool check(const int64_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions) {
+  bool check(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions) {
     // Your implementation goes here
     printf("check\n");
   }
 
-  void install(const int64_t tuid, const int64_t tid, const std::vector<std::string> & written_values) {
+  void install(const int32_t tuid, const int64_t tid, const std::vector<std::string> & written_values) {
     // Your implementation goes here
     printf("install\n");
   }
 
-  void abort(const int64_t tuid) {
+  void abort(const int32_t tuid) {
     // Your implementation goes here
     printf("abort\n");
   }

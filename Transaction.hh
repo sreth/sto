@@ -691,6 +691,9 @@ public:
     // map object id to object
     static std::map<int64_t, TObject*> objid_obj_map;
 
+    // map object to its id
+    static std::map<TObject*, int64_t> obj_objid_map;
+
     // map transaction id to modified objects
     static std::map<int64_t, std::vector<int64_t>> tuid_objids_map;
 
@@ -819,7 +822,7 @@ class DistSTOServer : virtual public DistSTOIf {
     printf("read\n");
   }
 
-  bool lock(const int64_t tuid, const std::vector<int64_t> & objids) {
+  bool lock(const int32_t tuid, const std::vector<int64_t> & objids) {
     // This tuid should not exist yet in tuid_objids map
     assert(Sto::tuid_objids_map.find(tuid) == Sto::tuid_objids_map.end());
     // record tuid for later use
@@ -828,19 +831,62 @@ class DistSTOServer : virtual public DistSTOIf {
     for (auto objid : objids) {
       // this object should already be registered
       assert(Sto::objid_obj_map.find(objid) != Sto::objid_obj_map.end());
-       
+
     } 
+
+/*********************************************************************************/
+
+/*
+    bool try_lock(TransItem& item, TransactionTid::type& vers) {
+#if STO_SORT_WRITESET
+        (void) item;
+        TransactionTid::lock(vers, threadid_);
+        return true;
+#else
+        // This function will eventually help us track the commit TID when we
+        // have no opacity, or for GV7 opacity.
+        unsigned n = 0;
+        while (1) {
+            if (TransactionTid::try_lock(vers, threadid_))
+                return true;
+            ++n;
+# if STO_SPIN_EXPBACKOFF
+            if (item.has_read() || n == STO_SPIN_BOUND_WRITE) {
+#  if STO_DEBUG_ABORTS
+                abort_version_ = vers;
+#  endif
+                return false;
+            }
+            if (n > 3)
+                for (unsigned x = 1 << std::min(15U, n - 2); x; --x)
+                    relax_fence();
+# else
+            if (item.has_read() || n == (1 << STO_SPIN_BOUND_WRITE)) {
+#  if STO_DEBUG_ABORTS
+                abort_version_ = vers;
+#  endif
+                return false;
+            }
+# endif
+            relax_fence();
+        }
+#endif
+    }
+*/
+
+/*************************************************************************************/
+
   }
 
-  bool check(const int64_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions) {
+  bool check(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions) {
     printf("check\n");
   }
 
-  void install(const int64_t tuid, const int64_t tid, const std::vector<std::string> & written_values) {
+  void install(const int32_t tuid, const int64_t tid, const std::vector<std::string> & written_values) {
     printf("install\n");
   }
 
-  void abort(const int64_t tuid) {
+  void abort(const int32_t tuid) {
     printf("abort %d\n", tuid);
   }
 };

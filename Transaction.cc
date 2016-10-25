@@ -282,6 +282,10 @@ bool Transaction::try_commit() {
         auto writeset_end = writeset + nwriteset;
         for (auto it = writeset; it != writeset_end; ) {
             TransItem* me = &tset_[*it / tset_chunk][*it % tset_chunk];
+            // if remote
+		
+
+            // if local
             if (!me->owner()->lock(*me, *this)) {
                 mark_abort_because(me, "commit lock");
                 goto abort;
@@ -439,6 +443,7 @@ DistSTOServer* Sto::server = nullptr;
 std::vector<DistSTOClient*> Sto::clients;
 int Sto::objid = 0; 
 std::map<int64_t, TObject*> Sto::objid_obj_map;
+std::map<TObject*, int64_t> Sto::obj_objid_map;
 std::map<int64_t, std::vector<int64_t>> Sto::tuid_objids_map;
 
 void* runServer(void *server) {
@@ -469,5 +474,7 @@ void Sto::initialize_dist_sto(int this_server_id, int total_servers) {
 }
 
 void Sto::register_obj(TObject *obj) {
-    objid_obj_map[Sto::objid++] = obj; 
+    int64_t id = Sto::objid++;
+    objid_obj_map[id] = obj;
+    obj_objid_map[obj] = id; 
 }

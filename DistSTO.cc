@@ -222,8 +222,8 @@ uint32_t DistSTO_lock_args::read(::apache::thrift::protocol::TProtocol* iprot) {
     switch (fid)
     {
       case 1:
-        if (ftype == ::apache::thrift::protocol::T_I64) {
-          xfer += iprot->readI64(this->tuid);
+        if (ftype == ::apache::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->tuid);
           this->__isset.tuid = true;
         } else {
           xfer += iprot->skip(ftype);
@@ -266,8 +266,8 @@ uint32_t DistSTO_lock_args::write(::apache::thrift::protocol::TProtocol* oprot) 
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("DistSTO_lock_args");
 
-  xfer += oprot->writeFieldBegin("tuid", ::apache::thrift::protocol::T_I64, 1);
-  xfer += oprot->writeI64(this->tuid);
+  xfer += oprot->writeFieldBegin("tuid", ::apache::thrift::protocol::T_I32, 1);
+  xfer += oprot->writeI32(this->tuid);
   xfer += oprot->writeFieldEnd();
 
   xfer += oprot->writeFieldBegin("objids", ::apache::thrift::protocol::T_LIST, 2);
@@ -297,8 +297,8 @@ uint32_t DistSTO_lock_pargs::write(::apache::thrift::protocol::TProtocol* oprot)
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("DistSTO_lock_pargs");
 
-  xfer += oprot->writeFieldBegin("tuid", ::apache::thrift::protocol::T_I64, 1);
-  xfer += oprot->writeI64((*(this->tuid)));
+  xfer += oprot->writeFieldBegin("tuid", ::apache::thrift::protocol::T_I32, 1);
+  xfer += oprot->writeI32((*(this->tuid)));
   xfer += oprot->writeFieldEnd();
 
   xfer += oprot->writeFieldBegin("objids", ::apache::thrift::protocol::T_LIST, 2);
@@ -453,8 +453,8 @@ uint32_t DistSTO_check_args::read(::apache::thrift::protocol::TProtocol* iprot) 
     switch (fid)
     {
       case 1:
-        if (ftype == ::apache::thrift::protocol::T_I64) {
-          xfer += iprot->readI64(this->tuid);
+        if (ftype == ::apache::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->tuid);
           this->__isset.tuid = true;
         } else {
           xfer += iprot->skip(ftype);
@@ -517,8 +517,8 @@ uint32_t DistSTO_check_args::write(::apache::thrift::protocol::TProtocol* oprot)
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("DistSTO_check_args");
 
-  xfer += oprot->writeFieldBegin("tuid", ::apache::thrift::protocol::T_I64, 1);
-  xfer += oprot->writeI64(this->tuid);
+  xfer += oprot->writeFieldBegin("tuid", ::apache::thrift::protocol::T_I32, 1);
+  xfer += oprot->writeI32(this->tuid);
   xfer += oprot->writeFieldEnd();
 
   xfer += oprot->writeFieldBegin("objids", ::apache::thrift::protocol::T_LIST, 2);
@@ -560,8 +560,8 @@ uint32_t DistSTO_check_pargs::write(::apache::thrift::protocol::TProtocol* oprot
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("DistSTO_check_pargs");
 
-  xfer += oprot->writeFieldBegin("tuid", ::apache::thrift::protocol::T_I64, 1);
-  xfer += oprot->writeI64((*(this->tuid)));
+  xfer += oprot->writeFieldBegin("tuid", ::apache::thrift::protocol::T_I32, 1);
+  xfer += oprot->writeI32((*(this->tuid)));
   xfer += oprot->writeFieldEnd();
 
   xfer += oprot->writeFieldBegin("objids", ::apache::thrift::protocol::T_LIST, 2);
@@ -728,8 +728,8 @@ uint32_t DistSTO_install_args::read(::apache::thrift::protocol::TProtocol* iprot
     switch (fid)
     {
       case 1:
-        if (ftype == ::apache::thrift::protocol::T_I64) {
-          xfer += iprot->readI64(this->tuid);
+        if (ftype == ::apache::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->tuid);
           this->__isset.tuid = true;
         } else {
           xfer += iprot->skip(ftype);
@@ -780,8 +780,8 @@ uint32_t DistSTO_install_args::write(::apache::thrift::protocol::TProtocol* opro
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("DistSTO_install_args");
 
-  xfer += oprot->writeFieldBegin("tuid", ::apache::thrift::protocol::T_I64, 1);
-  xfer += oprot->writeI64(this->tuid);
+  xfer += oprot->writeFieldBegin("tuid", ::apache::thrift::protocol::T_I32, 1);
+  xfer += oprot->writeI32(this->tuid);
   xfer += oprot->writeFieldEnd();
 
   xfer += oprot->writeFieldBegin("tid", ::apache::thrift::protocol::T_I64, 2);
@@ -815,8 +815,8 @@ uint32_t DistSTO_install_pargs::write(::apache::thrift::protocol::TProtocol* opr
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("DistSTO_install_pargs");
 
-  xfer += oprot->writeFieldBegin("tuid", ::apache::thrift::protocol::T_I64, 1);
-  xfer += oprot->writeI64((*(this->tuid)));
+  xfer += oprot->writeFieldBegin("tuid", ::apache::thrift::protocol::T_I32, 1);
+  xfer += oprot->writeI32((*(this->tuid)));
   xfer += oprot->writeFieldEnd();
 
   xfer += oprot->writeFieldBegin("tid", ::apache::thrift::protocol::T_I64, 2);
@@ -944,8 +944,8 @@ uint32_t DistSTO_abort_args::read(::apache::thrift::protocol::TProtocol* iprot) 
     switch (fid)
     {
       case 1:
-        if (ftype == ::apache::thrift::protocol::T_I64) {
-          xfer += iprot->readI64(this->tuid);
+        if (ftype == ::apache::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->tuid);
           this->__isset.tuid = true;
         } else {
           xfer += iprot->skip(ftype);
@@ -968,8 +968,8 @@ uint32_t DistSTO_abort_args::write(::apache::thrift::protocol::TProtocol* oprot)
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("DistSTO_abort_args");
 
-  xfer += oprot->writeFieldBegin("tuid", ::apache::thrift::protocol::T_I64, 1);
-  xfer += oprot->writeI64(this->tuid);
+  xfer += oprot->writeFieldBegin("tuid", ::apache::thrift::protocol::T_I32, 1);
+  xfer += oprot->writeI32(this->tuid);
   xfer += oprot->writeFieldEnd();
 
   xfer += oprot->writeFieldStop();
@@ -987,8 +987,8 @@ uint32_t DistSTO_abort_pargs::write(::apache::thrift::protocol::TProtocol* oprot
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
   xfer += oprot->writeStructBegin("DistSTO_abort_pargs");
 
-  xfer += oprot->writeFieldBegin("tuid", ::apache::thrift::protocol::T_I64, 1);
-  xfer += oprot->writeI64((*(this->tuid)));
+  xfer += oprot->writeFieldBegin("tuid", ::apache::thrift::protocol::T_I32, 1);
+  xfer += oprot->writeI32((*(this->tuid)));
   xfer += oprot->writeFieldEnd();
 
   xfer += oprot->writeFieldStop();
@@ -1131,13 +1131,13 @@ void DistSTOClient::recv_read(std::string& _return)
   throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "read failed: unknown result");
 }
 
-bool DistSTOClient::lock(const int64_t tuid, const std::vector<int64_t> & objids)
+bool DistSTOClient::lock(const int32_t tuid, const std::vector<int64_t> & objids)
 {
   send_lock(tuid, objids);
   return recv_lock();
 }
 
-void DistSTOClient::send_lock(const int64_t tuid, const std::vector<int64_t> & objids)
+void DistSTOClient::send_lock(const int32_t tuid, const std::vector<int64_t> & objids)
 {
   int32_t cseqid = 0;
   oprot_->writeMessageBegin("lock", ::apache::thrift::protocol::T_CALL, cseqid);
@@ -1190,13 +1190,13 @@ bool DistSTOClient::recv_lock()
   throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "lock failed: unknown result");
 }
 
-bool DistSTOClient::check(const int64_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions)
+bool DistSTOClient::check(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions)
 {
   send_check(tuid, objids, versions);
   return recv_check();
 }
 
-void DistSTOClient::send_check(const int64_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions)
+void DistSTOClient::send_check(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions)
 {
   int32_t cseqid = 0;
   oprot_->writeMessageBegin("check", ::apache::thrift::protocol::T_CALL, cseqid);
@@ -1250,13 +1250,13 @@ bool DistSTOClient::recv_check()
   throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "check failed: unknown result");
 }
 
-void DistSTOClient::install(const int64_t tuid, const int64_t tid, const std::vector<std::string> & written_values)
+void DistSTOClient::install(const int32_t tuid, const int64_t tid, const std::vector<std::string> & written_values)
 {
   send_install(tuid, tid, written_values);
   recv_install();
 }
 
-void DistSTOClient::send_install(const int64_t tuid, const int64_t tid, const std::vector<std::string> & written_values)
+void DistSTOClient::send_install(const int32_t tuid, const int64_t tid, const std::vector<std::string> & written_values)
 {
   int32_t cseqid = 0;
   oprot_->writeMessageBegin("install", ::apache::thrift::protocol::T_CALL, cseqid);
@@ -1305,13 +1305,13 @@ void DistSTOClient::recv_install()
   return;
 }
 
-void DistSTOClient::abort(const int64_t tuid)
+void DistSTOClient::abort(const int32_t tuid)
 {
   send_abort(tuid);
   recv_abort();
 }
 
-void DistSTOClient::send_abort(const int64_t tuid)
+void DistSTOClient::send_abort(const int32_t tuid)
 {
   int32_t cseqid = 0;
   oprot_->writeMessageBegin("abort", ::apache::thrift::protocol::T_CALL, cseqid);
@@ -1736,13 +1736,13 @@ void DistSTOConcurrentClient::recv_read(std::string& _return, const int32_t seqi
   } // end while(true)
 }
 
-bool DistSTOConcurrentClient::lock(const int64_t tuid, const std::vector<int64_t> & objids)
+bool DistSTOConcurrentClient::lock(const int32_t tuid, const std::vector<int64_t> & objids)
 {
   int32_t seqid = send_lock(tuid, objids);
   return recv_lock(seqid);
 }
 
-int32_t DistSTOConcurrentClient::send_lock(const int64_t tuid, const std::vector<int64_t> & objids)
+int32_t DistSTOConcurrentClient::send_lock(const int32_t tuid, const std::vector<int64_t> & objids)
 {
   int32_t cseqid = this->sync_.generateSeqId();
   ::apache::thrift::async::TConcurrentSendSentry sentry(&this->sync_);
@@ -1821,13 +1821,13 @@ bool DistSTOConcurrentClient::recv_lock(const int32_t seqid)
   } // end while(true)
 }
 
-bool DistSTOConcurrentClient::check(const int64_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions)
+bool DistSTOConcurrentClient::check(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions)
 {
   int32_t seqid = send_check(tuid, objids, versions);
   return recv_check(seqid);
 }
 
-int32_t DistSTOConcurrentClient::send_check(const int64_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions)
+int32_t DistSTOConcurrentClient::send_check(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions)
 {
   int32_t cseqid = this->sync_.generateSeqId();
   ::apache::thrift::async::TConcurrentSendSentry sentry(&this->sync_);
@@ -1907,13 +1907,13 @@ bool DistSTOConcurrentClient::recv_check(const int32_t seqid)
   } // end while(true)
 }
 
-void DistSTOConcurrentClient::install(const int64_t tuid, const int64_t tid, const std::vector<std::string> & written_values)
+void DistSTOConcurrentClient::install(const int32_t tuid, const int64_t tid, const std::vector<std::string> & written_values)
 {
   int32_t seqid = send_install(tuid, tid, written_values);
   recv_install(seqid);
 }
 
-int32_t DistSTOConcurrentClient::send_install(const int64_t tuid, const int64_t tid, const std::vector<std::string> & written_values)
+int32_t DistSTOConcurrentClient::send_install(const int32_t tuid, const int64_t tid, const std::vector<std::string> & written_values)
 {
   int32_t cseqid = this->sync_.generateSeqId();
   ::apache::thrift::async::TConcurrentSendSentry sentry(&this->sync_);
@@ -1987,13 +1987,13 @@ void DistSTOConcurrentClient::recv_install(const int32_t seqid)
   } // end while(true)
 }
 
-void DistSTOConcurrentClient::abort(const int64_t tuid)
+void DistSTOConcurrentClient::abort(const int32_t tuid)
 {
   int32_t seqid = send_abort(tuid);
   recv_abort(seqid);
 }
 
-int32_t DistSTOConcurrentClient::send_abort(const int64_t tuid)
+int32_t DistSTOConcurrentClient::send_abort(const int32_t tuid)
 {
   int32_t cseqid = this->sync_.generateSeqId();
   ::apache::thrift::async::TConcurrentSendSentry sentry(&this->sync_);
