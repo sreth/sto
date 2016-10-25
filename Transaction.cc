@@ -1,4 +1,5 @@
 #include "Transaction.hh"
+#include "DistSTOServer.hh"
 #include <typeinfo>
 
 Transaction::testing_type Transaction::testing;
