@@ -278,27 +278,49 @@ bool Transaction::try_commit() {
         return *ti < *tj;
     });
 
+
     if (nwriteset) {
+        // map each server to a list of modified objects that reside on that server
+        std::unordered_map<int, std::vector<TransItem*>> server_titems_map;
         state_ = s_committing_locked;
         auto writeset_end = writeset + nwriteset;
         for (auto it = writeset; it != writeset_end; ) {
             TransItem* me = &tset_[*it / tset_chunk][*it % tset_chunk];		
             // if local then lock the object as usual
-            if (Sto::is_local_obj(me->owner())) {
+            if (Sto::server->is_local_obj(me->owner())) {
                 if (!me->owner()->lock(*me, *this)) {
                     mark_abort_because(me, "commit lock");
                     goto abort;
                 }
+                me->__or_flags(TransItem::lock_bit);
             } else {
-                // make RPCs to other servers that own the objects
-                 
-                
-
+                server_titems_map[DistSTOServer::obj_reside_on(me->owner())].push_back(me);
             }
-            me->__or_flags(TransItem::lock_bit);
             ++it;
         }
+
+        // make lock RPCs to remote servers
+        int32_t tuid = Sto::get_tuid();
+        for (auto server_titems : server_titems_map) {
+            auto server = server_titems.first;
+            auto titems = server_titems.second;
+            std::vector<int64_t> objids;
+            std::vector<int64_t> keys;
+            for (auto titem: titems) {
+                objids.push_back(obj_objid_map[titem->owner()]);
+                keys.push_back(titem->key());
+            }
+
+            // XXX should do this parallel 
+            if (!Sto::clients[server]->lock(tuid, objids, keys))
+                goto abort;
+
+            // successfull lock modified objects
+            for (auto titem: titems)
+                titem->__or_flags(TransItem::lock_bit);
+        }
     }
+
 #endif
 
 
@@ -451,6 +473,16 @@ std::unordered_map<int64_t, TObject*> Sto::objid_obj_map;
 std::unordered_map<TObject*, int64_t> Sto::obj_objid_map;
 std::unordered_map<int32_t, std::vector<int64_t>> Sto::tuid_objids_map;
 
+int32_t Sto::get_tuid() {
+    // The original thread id is 5 bits. So we assign 2 upper bits 
+    // for server id and 3 lower bits for thread id (make sure that
+    // there are no more than 4 servers running and each of them
+    // cannot have more than 8 threads)
+    int32_t tuid = (Sto::server->id() << 3) | TThread::id();
+    assert(tuid >= 0 && tuid < 32); 
+    return tuid; 
+}
+
 void* runServer(void *server) {
     ((DistSTOServer *) server)->serve();
     return nullptr;
@@ -482,16 +514,4 @@ void Sto::register_obj(TObject *obj) {
     objid_obj_map[objid] = obj;
 }
 
-bool Sto::is_local_obj(TObject *obj) {
-    std::unordered_map<TObject*, int64_t>::const_iterator objid = Sto::obj_objid_map.find(obj);
-    // this obj must already be registered
-    assert(objid != Sto::obj_objid_map.end());
-    return objid->second % Sto::total_servers == Sto::server->id();
-}
 
-bool Sto::is_local_obj(int64_t objid) {
-    std::unordered_map<int64_t, TObject*>::const_iterator obj = Sto::objid_obj_map.find(objid);
-    // this obj must already be registered
-    assert(obj != Sto::objid_obj_map.end());
-    return objid % Sto::total_servers == Sto::server->id();
-}
