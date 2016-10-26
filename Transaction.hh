@@ -686,15 +686,14 @@ public:
     // map transaction id to modified objects
     static std::unordered_map<int32_t, std::vector<int64_t>> tuid_objids_map;
 
+    // get tuid of the currently running transaction
+    static int32_t get_tuid();
+
     // this is called once to initialize the system
     static void initialize_dist_sto(int this_server_id, int total_servers);
     
     // assign a unique id to the registered object
     static void register_obj(TObject *obj);
-
-    // used to determine if an object is local
-    static bool is_local_obj(TObject *obj);
-    static bool Sto::is_local_obj(int64_t objid);
 
 /******************** End of Distributed STO ********************/ 
 

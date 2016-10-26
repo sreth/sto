@@ -23,6 +23,8 @@ class DistSTOServer : virtual public DistSTOIf {
  public:
 
   DistSTOServer(int id, int port) {
+    // Currently we can have at most 4 servers, need to change later
+    assert( id >= 0 && id < 4);
     _id = id;
     shared_ptr<DistSTOServer> handler(this);
     shared_ptr<TProcessor> processor(new DistSTOProcessor(handler));
@@ -38,6 +40,22 @@ class DistSTOServer : virtual public DistSTOIf {
 
   void serve() {
     _server->serve();
+  }
+
+  static int obj_reside_on(int64_t objid) {
+    return objid % Sto::total_servers;
+  }
+
+  static int obj_reside_on(TObject *obj) {
+    return obj_reside_on(Sto::obj_objid_map.find(obj)->second);
+  }
+
+  bool is_local_obj(int64_t objid) {
+    return obj_reside_on(objid) == _id;
+  }
+
+  bool is_local_obj(TObject *obj) {
+    return obj_reside_on(obj) == _id;
   }
 
   typedef DistTBox<int64_t> box_type;
@@ -58,14 +76,8 @@ class DistSTOServer : virtual public DistSTOIf {
     Sto::tuid_objids_map[tuid] = objids;
     // lock all modified objects
     for (auto objid : objids) {
-      // this object should already be registered
-      assert(Sto::objid_obj_map.find(objid) != Sto::objid_obj_map.end());
       // this object should be local
-      assert(Sto::is_local_obj(objid));
-
-     
-
-
+      assert(is_local_obj(objid));
     }
   }
 
