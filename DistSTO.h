@@ -22,7 +22,7 @@ class DistSTOIf {
  public:
   virtual ~DistSTOIf() {}
   virtual void read(std::string& _return, const int64_t objid) = 0;
-  virtual bool lock(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & keys) = 0;
+  virtual int64_t lock(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & keys, const std::vector<bool> & has_read) = 0;
   virtual bool check(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions) = 0;
   virtual void install(const int32_t tuid, const int64_t tid, const std::vector<std::string> & written_values) = 0;
   virtual void abort(const int32_t tuid) = 0;
@@ -58,8 +58,8 @@ class DistSTONull : virtual public DistSTOIf {
   void read(std::string& /* _return */, const int64_t /* objid */) {
     return;
   }
-  bool lock(const int32_t /* tuid */, const std::vector<int64_t> & /* objids */, const std::vector<int64_t> & /* keys */) {
-    bool _return = false;
+  int64_t lock(const int32_t /* tuid */, const std::vector<int64_t> & /* objids */, const std::vector<int64_t> & /* keys */, const std::vector<bool> & /* has_read */) {
+    int64_t _return = 0;
     return _return;
   }
   bool check(const int32_t /* tuid */, const std::vector<int64_t> & /* objids */, const std::vector<int64_t> & /* versions */) {
@@ -179,10 +179,11 @@ class DistSTO_read_presult {
 };
 
 typedef struct _DistSTO_lock_args__isset {
-  _DistSTO_lock_args__isset() : tuid(false), objids(false), keys(false) {}
+  _DistSTO_lock_args__isset() : tuid(false), objids(false), keys(false), has_read(false) {}
   bool tuid :1;
   bool objids :1;
   bool keys :1;
+  bool has_read :1;
 } _DistSTO_lock_args__isset;
 
 class DistSTO_lock_args {
@@ -197,6 +198,7 @@ class DistSTO_lock_args {
   int32_t tuid;
   std::vector<int64_t>  objids;
   std::vector<int64_t>  keys;
+  std::vector<bool>  has_read;
 
   _DistSTO_lock_args__isset __isset;
 
@@ -206,6 +208,8 @@ class DistSTO_lock_args {
 
   void __set_keys(const std::vector<int64_t> & val);
 
+  void __set_has_read(const std::vector<bool> & val);
+
   bool operator == (const DistSTO_lock_args & rhs) const
   {
     if (!(tuid == rhs.tuid))
@@ -213,6 +217,8 @@ class DistSTO_lock_args {
     if (!(objids == rhs.objids))
       return false;
     if (!(keys == rhs.keys))
+      return false;
+    if (!(has_read == rhs.has_read))
       return false;
     return true;
   }
@@ -236,6 +242,7 @@ class DistSTO_lock_pargs {
   const int32_t* tuid;
   const std::vector<int64_t> * objids;
   const std::vector<int64_t> * keys;
+  const std::vector<bool> * has_read;
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
@@ -255,11 +262,11 @@ class DistSTO_lock_result {
   }
 
   virtual ~DistSTO_lock_result() throw();
-  bool success;
+  int64_t success;
 
   _DistSTO_lock_result__isset __isset;
 
-  void __set_success(const bool val);
+  void __set_success(const int64_t val);
 
   bool operator == (const DistSTO_lock_result & rhs) const
   {
@@ -288,7 +295,7 @@ class DistSTO_lock_presult {
 
 
   virtual ~DistSTO_lock_presult() throw();
-  bool* success;
+  int64_t* success;
 
   _DistSTO_lock_presult__isset __isset;
 
@@ -628,9 +635,9 @@ class DistSTOClient : virtual public DistSTOIf {
   void read(std::string& _return, const int64_t objid);
   void send_read(const int64_t objid);
   void recv_read(std::string& _return);
-  bool lock(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & keys);
-  void send_lock(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & keys);
-  bool recv_lock();
+  int64_t lock(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & keys, const std::vector<bool> & has_read);
+  void send_lock(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & keys, const std::vector<bool> & has_read);
+  int64_t recv_lock();
   bool check(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions);
   void send_check(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions);
   bool recv_check();
@@ -706,13 +713,13 @@ class DistSTOMultiface : virtual public DistSTOIf {
     return;
   }
 
-  bool lock(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & keys) {
+  int64_t lock(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & keys, const std::vector<bool> & has_read) {
     size_t sz = ifaces_.size();
     size_t i = 0;
     for (; i < (sz - 1); ++i) {
-      ifaces_[i]->lock(tuid, objids, keys);
+      ifaces_[i]->lock(tuid, objids, keys, has_read);
     }
-    return ifaces_[i]->lock(tuid, objids, keys);
+    return ifaces_[i]->lock(tuid, objids, keys, has_read);
   }
 
   bool check(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions) {
@@ -775,9 +782,9 @@ class DistSTOConcurrentClient : virtual public DistSTOIf {
   void read(std::string& _return, const int64_t objid);
   int32_t send_read(const int64_t objid);
   void recv_read(std::string& _return, const int32_t seqid);
-  bool lock(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & keys);
-  int32_t send_lock(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & keys);
-  bool recv_lock(const int32_t seqid);
+  int64_t lock(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & keys, const std::vector<bool> & has_read);
+  int32_t send_lock(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & keys, const std::vector<bool> & has_read);
+  int64_t recv_lock(const int32_t seqid);
   bool check(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions);
   int32_t send_check(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions);
   bool recv_check(const int32_t seqid);
