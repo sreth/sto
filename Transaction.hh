@@ -674,26 +674,11 @@ public:
     // a client for each peer that this server talks to
     static std::vector<DistSTOClient*> clients;
 
-    // used to assign a unique id to each registered object
-    static int objid;
-
-    // map object id to object
-    static std::unordered_map<int64_t, TObject*> objid_obj_map;
-
-    // map object to its id
-    static std::unordered_map<TObject*, int64_t> obj_objid_map;
-
     // map transaction id to modified objects
-    static std::unordered_map<int32_t, std::vector<int64_t>> tuid_objids_map;
-
-    // get tuid of the currently running transaction
-    static int32_t get_tuid();
+    static std::unordered_map<int32_t, std::vector<int64_t>> tuid_version_ptrs;
 
     // this is called once to initialize the system
     static void initialize_dist_sto(int this_server_id, int total_servers);
-    
-    // assign a unique id to the registered object
-    static void register_obj(TObject *obj);
 
 /******************** End of Distributed STO ********************/ 
 

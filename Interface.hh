@@ -22,6 +22,10 @@ public:
         assert(id >= 0 && id < 32);
         the_id = id;
     }
+
+    // used by distributed sto to determine the transaction id
+    // the current thread is running
+    static int32_t get_tuid();
 };
 
 class TransactionTid {
@@ -577,6 +581,7 @@ public:
         (void) item, (void) committed;
     }
     virtual void print(std::ostream& w, const TransItem& item) const;
+    virtual void * version_ptr(int key) { return nullptr; }
 };
 
 typedef TObject Shared;

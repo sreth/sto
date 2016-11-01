@@ -241,6 +241,8 @@ bool Transaction::try_commit() {
     writeset[0] = tset_size_;
 
     TransItem* it = nullptr;
+    int32_t tuid = TThread::get_tuid();
+    std::unordered_map<int, std::vector<TransItem*>> server_titems_map;
     for (unsigned tidx = 0; tidx != tset_size_; ++tidx) {
         it = (tidx % tset_chunk ? it + 1 : tset_[tidx / tset_chunk]);
         if (it->has_write()) {
@@ -250,11 +252,17 @@ bool Transaction::try_commit() {
                 first_write_ = writeset[0];
                 state_ = s_committing_locked;
             }
-            if (!it->owner()->lock(*it, *this)) {
-                mark_abort_because(it, "commit lock");
-                goto abort;
+
+            // if local then proceed as usual
+            if (Sto::server->is_local_obj(it->owner())) {
+                if (!it->owner()->lock(*it, *this)) {
+                    mark_abort_because(it, "commit lock");
+                    goto abort;
+                }
+                it->__or_flags(TransItem::lock_bit);
+            } else {
+                server_titems_map[DistSTOServer::obj_reside_on(it->owner())].push_back(it);
             }
-            it->__or_flags(TransItem::lock_bit);
 #endif
         }
         if (it->has_read())
@@ -268,6 +276,26 @@ bool Transaction::try_commit() {
         }
     }
 
+    // make lock RPC calls to remote servers
+    for (auto server_titems : server_titems_map) {
+        auto server = server_titems.first;
+        auto titems = server_titems.second;
+        std::vector<int64_t> version_ptrs;
+        std::vector<bool> has_read;
+        for (auto titem: titems) {
+	    version_ptrs.push_back((int64_t) titem->owner()->version_ptr(titem->key<int>()));
+            has_read.push_back(titem->has_read());
+        }
+
+        // XXX should do this parallel 
+        if (Sto::clients[server]->lock(tuid, version_ptrs, has_read) < 0)
+            goto abort;
+
+        // successfull lock modified objects so mark their lock bits
+        for (auto titem: titems)
+            titem->__or_flags(TransItem::lock_bit);
+    }
+
     first_write_ = writeset[0];
 
     //phase1
@@ -278,7 +306,6 @@ bool Transaction::try_commit() {
         return *ti < *tj;
     });
 
-
     if (nwriteset) {
         // map each server to a list of modified objects that reside on that server
         std::unordered_map<int, std::vector<TransItem*>> server_titems_map;
@@ -286,38 +313,12 @@ bool Transaction::try_commit() {
         auto writeset_end = writeset + nwriteset;
         for (auto it = writeset; it != writeset_end; ) {
             TransItem* me = &tset_[*it / tset_chunk][*it % tset_chunk];		
-            // if local then lock the object as usual
-            if (Sto::server->is_local_obj(me->owner())) {
-                if (!me->owner()->lock(*me, *this)) {
-                    mark_abort_because(me, "commit lock");
-                    goto abort;
-                }
-                me->__or_flags(TransItem::lock_bit);
-            } else {
-                server_titems_map[DistSTOServer::obj_reside_on(me->owner())].push_back(me);
-            }
-            ++it;
-        }
-
-        // make lock RPCs to remote servers
-        int32_t tuid = Sto::get_tuid();
-        for (auto server_titems : server_titems_map) {
-            auto server = server_titems.first;
-            auto titems = server_titems.second;
-            std::vector<int64_t> objids;
-            std::vector<int64_t> keys;
-            for (auto titem: titems) {
-                objids.push_back(obj_objid_map[titem->owner()]);
-                keys.push_back(titem->key());
-            }
-
-            // XXX should do this parallel 
-            if (!Sto::clients[server]->lock(tuid, objids, keys))
+            if (!me->owner()->lock(*me, *this)) {
+                mark_abort_because(me, "commit lock");
                 goto abort;
-
-            // successfull lock modified objects
-            for (auto titem: titems)
-                titem->__or_flags(TransItem::lock_bit);
+            }
+            me->__or_flags(TransItem::lock_bit);
+            ++it;
         }
     }
 
@@ -468,31 +469,29 @@ std::ostream& operator<<(std::ostream& w, const TransactionGuard& txn) {
 int Sto::total_servers = 0;
 DistSTOServer* Sto::server = nullptr;
 std::vector<DistSTOClient*> Sto::clients;
-int Sto::objid = 0; 
-std::unordered_map<int64_t, TObject*> Sto::objid_obj_map;
-std::unordered_map<TObject*, int64_t> Sto::obj_objid_map;
-std::unordered_map<int32_t, std::vector<int64_t>> Sto::tuid_objids_map;
-
-int32_t Sto::get_tuid() {
-    // The original thread id is 5 bits. So we assign 2 upper bits 
-    // for server id and 3 lower bits for thread id (make sure that
-    // there are no more than 4 servers running and each of them
-    // cannot have more than 8 threads)
-    int32_t tuid = (Sto::server->id() << 3) | TThread::id();
-    assert(tuid >= 0 && tuid < 32); 
-    return tuid; 
-}
+std::unordered_map<int32_t, std::vector<int64_t>> Sto::tuid_version_ptrs;
 
 void* runServer(void *server) {
     ((DistSTOServer *) server)->serve();
     return nullptr;
 }
 
+#include <chrono>
+#include <thread>
+
 void Sto::initialize_dist_sto(int server_id, int total_servers) {
     assert(server_id >= 0 && server_id < total_servers);
-    // Initialize the server that handle all RPCs
-    Sto::server = new DistSTOServer(server_id, 9090);
+    
+    Sto::server = new DistSTOServer(server_id, 9090, true);
     Sto::total_servers = total_servers;
+
+    // start the server then returns immediately
+    pthread_t thread;
+    pthread_create(&thread, NULL, runServer, Sto::server);
+
+    // give the server enough time to start
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
     // Initialize a client for each peer this server talks to
     for (int i = 0; i < total_servers; i++) {
 	// XXX Need to change host and port later
@@ -500,18 +499,17 @@ void Sto::initialize_dist_sto(int server_id, int total_servers) {
         boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
         boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
         Sto::clients.push_back(new DistSTOClient(protocol));
+        transport->open();
     }
-    // start the server then returns immediately
-    pthread_t thread;
-    pthread_create(&thread, NULL, runServer, Sto::server);
 }
 
-void Sto::register_obj(TObject *obj) {
-    assert(Sto::obj_objid_map.find(obj) == Sto::obj_objid_map.end());
-    // XXX: might need lock to protect Sto::objid
-    int64_t objid = Sto::objid++;
-    obj_objid_map[obj] = objid;
-    objid_obj_map[objid] = obj;
+// The original thread id is 5 bits. So we assign 2 upper bits 
+// for server id and 3 lower bits for thread id (make sure that
+// there are no more than 4 servers running and each of them
+// cannot have more than 8 threads)
+int32_t TThread::get_tuid() {
+    int32_t tuid = (Sto::server->id() << 3) | TThread::id();
+    assert(tuid >= 0 && tuid < 32); 
+    return tuid; 
 }
-
 

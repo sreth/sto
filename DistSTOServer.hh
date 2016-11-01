@@ -17,43 +17,42 @@ using boost::shared_ptr;
 
 class DistSTOServer : virtual public DistSTOIf {
 
- private:
+private:
   int _id;
   TSimpleServer *_server;
- public:
+public:
 
-  DistSTOServer(int id, int port) {
+  DistSTOServer(int id, int port, bool create) {
     // Currently we can have at most 4 servers, need to change later
     assert( id >= 0 && id < 4);
     _id = id;
+    if (create) {
     shared_ptr<DistSTOServer> handler(this);
     shared_ptr<TProcessor> processor(new DistSTOProcessor(handler));
     shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
     shared_ptr<TTransportFactory> transportFactory(new TBufferedTransportFactory());
     shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
     _server = new TSimpleServer(processor, serverTransport, transportFactory, protocolFactory); 
+    }
   }
 
+  // unique server ID assigned by the user
   int id() {
     return _id;
   }
-
+  
+  // run the server
   void serve() {
     _server->serve();
   }
 
-  static int obj_reside_on(int64_t objid) {
-    return objid % Sto::total_servers;
-  }
-
+  // return the server id that owns the object
   static int obj_reside_on(TObject *obj) {
-    return obj_reside_on(Sto::obj_objid_map.find(obj)->second);
+    std::hash<TObject*> tobject_hash;
+    return tobject_hash(obj) % Sto::total_servers;
   }
 
-  bool is_local_obj(int64_t objid) {
-    return obj_reside_on(objid) == _id;
-  }
-
+  // determines if the object is local
   bool is_local_obj(TObject *obj) {
     return obj_reside_on(obj) == _id;
   }
@@ -69,19 +68,13 @@ class DistSTOServer : virtual public DistSTOIf {
     memcpy((void *) _return.data(), (void *) &val, sizeof(box_type::read_type));
   }
 
-  bool lock(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & keys) {
-    // This tuid should not exist yet in tuid_objids map
-    assert(Sto::tuid_objids_map.find(tuid) == Sto::tuid_objids_map.end());
-    // record tuid for later use
-    Sto::tuid_objids_map[tuid] = objids;
-    // lock all modified objects
-    for (auto objid : objids) {
-      // this object should be local
-      assert(is_local_obj(objid));
-    }
+  // Used to lock modified objects. Return server version if success otherwise a negative value
+  int64_t lock(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<bool> & has_read) {
+    std::cout << "lock\n";    
+    return 0;
   }
 
-  bool check(const int32_t tuid, const std::vector<int64_t> & objids, const std::vector<int64_t> & versions) {
+  bool check(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<int64_t> & versions) {
     return false;
   }
 
