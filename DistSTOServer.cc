@@ -76,18 +76,14 @@ int64_t DistSTOServer::lock(const int32_t tuid, const std::vector<int64_t> & ver
     return 0;
 }
 
-bool DistSTOServer::check(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<int64_t> & versions) {
+bool DistSTOServer::check(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<int64_t> & old_versions, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) {
     dprintf("check %d objects ... ", version_ptrs.size());
-    if (version_ptrs.size() != versions.size()) {
-        dprintf("bug\n");
-        return false;
-    }
 
+    TransactionTid::type *version_ptr;
     for (int i = 0; i < version_ptrs.size(); i++) {
-        TransactionTid::type *obj_version = (TransactionTid::type* ) &version_ptrs[i];
-        TransactionTid::type read_version = versions[i];
-        if (!TransactionTid::check_version(read_version, *obj_version)) {
-            dprintf("fail\n");
+        version_ptr = (TransactionTid::type*) version_ptrs[i];
+        if (!TransactionTid::check_version(*version_ptr, old_versions[i])
+           && (!may_duplicate_items_ || !preceding_duplicate_read_[i])) {
             return false;
         }
     }

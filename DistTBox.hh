@@ -122,11 +122,11 @@ public:
         w << "}";
     }
 
-protected:
-    version_type vers_;
-    W v_;
-private:
     void * version_ptr(int key) override {
          return &vers_;
     }
+
+protected:
+    version_type vers_;
+    W v_;
 };

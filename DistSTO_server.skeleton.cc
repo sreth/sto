@@ -30,7 +30,7 @@ class DistSTOHandler : virtual public DistSTOIf {
     printf("lock\n");
   }
 
-  bool check(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<int64_t> & versions) {
+  bool check(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<int64_t> & old_versions, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) {
     // Your implementation goes here
     printf("check\n");
   }
@@ -40,7 +40,7 @@ class DistSTOHandler : virtual public DistSTOIf {
     printf("install\n");
   }
 
-  void abort(const int32_t tuid, const std::vector<int64_t> & version_ptrs) {
+  void abort(const int32_t tuid, const std::vector<int64_t> & unlock_objids) {
     // Your implementation goes here
     printf("abort\n");
   }

@@ -255,9 +255,9 @@ bool Transaction::try_commit() {
     writeset[0] = tset_size_;
 
     TransItem* it = nullptr;
+    void *version_ptr;
     int32_t tuid = TThread::get_tuid();
-    std::unordered_map<int, std::vector<TransItem*>> server_read_titems_map;
-    std::unordered_map<int, std::vector<TransItem*>> server_write_titems_map;
+    std::unordered_map<int, std::vector<TransItem*>> server_titems_map;
     for (unsigned tidx = 0; tidx != tset_size_; ++tidx) {
         it = (tidx % tset_chunk ? it + 1 : tset_[tidx / tset_chunk]);
         if (it->has_write()) {
@@ -272,11 +272,12 @@ bool Transaction::try_commit() {
             if (Sto::server->is_local_obj(it->owner())) {
                 if (!it->owner()->lock(*it, *this)) {
                     mark_abort_because(it, "commit lock");
+                    // XXX: need to deal with abort here
                     goto abort;
                 }
                 it->__or_flags(TransItem::lock_bit);
             } else {
-                server_write_titems_map[DistSTOServer::obj_reside_on(it->owner())].push_back(it);
+                server_titems_map[DistSTOServer::obj_reside_on(it->owner())].push_back(it);
             }
 #endif
         }
@@ -286,13 +287,14 @@ bool Transaction::try_commit() {
             TXP_INCREMENT(txp_total_check_predicate);
             if (!it->owner()->check_predicate(*it, *this, true)) {
                 mark_abort_because(it, "commit check_predicate");
+                // XXX: need to deal with abort here
                 goto abort;
             }
         }
     }
 
     // make lock RPC calls to remote servers
-    for (auto server_titems : server_write_titems_map) {
+    for (auto server_titems : server_titems_map) {
         auto server = server_titems.first;
         auto titems = server_titems.second;
         std::vector<int64_t> version_ptrs;
@@ -304,6 +306,7 @@ bool Transaction::try_commit() {
 
         // XXX should do this parallel 
         if (Sto::clients[server]->lock(tuid, version_ptrs, has_read) < 0)
+            // XXX: need to deal with abort
             goto abort;
 
         // successfull lock modified objects so mark their lock bits
@@ -347,44 +350,49 @@ bool Transaction::try_commit() {
 #endif
 
     //phase2
+    server_titems_map.clear();
     for (unsigned tidx = 0; tidx != tset_size_; ++tidx) {
         it = (tidx % tset_chunk ? it + 1 : tset_[tidx / tset_chunk]);
         if (it->has_read()) {
             TXP_INCREMENT(txp_total_check_read);
-
             // if local then proceed as usual
             if (Sto::server->is_local_obj(it->owner())) {
                 if (!it->owner()->check(*it, *this)
-                        && (!may_duplicate_items_ || !preceding_duplicate_read(it))) {
+                    && (!may_duplicate_items_ || !preceding_duplicate_read(it))) {
                     mark_abort_because(it, "commit check");
+                    // XXX: need to deal with abort here
                     goto abort;
                 }
             } else {
-                // XXX: correctly handle duplicate read titems?
-                server_read_titems_map[DistSTOServer::obj_reside_on(it->owner())].push_back(it);
+                server_titems_map[DistSTOServer::obj_reside_on(it->owner())].push_back(it);
             }
         }
     }
 
     // make check RPC calls to remote servers
-    for (auto server_titems : server_read_titems_map) {
+    for (auto server_titems : server_titems_map) {
         auto server = server_titems.first;
         auto titems = server_titems.second;
         std::vector<int64_t> version_ptrs;
-        std::vector<int64_t> versions;
+        std::vector<int64_t> old_versions;
+        std::vector<bool> preceding_duplicate_read_;
         for (auto titem: titems) {
-            version_ptrs.push_back((int64_t) titem->owner()->version_ptr(titem->key<int>()));
-            versions.push_back(titem->read_value<TransactionTid::type>());
+            version_ptr = titem->owner()->version_ptr(titem->key<int>());
+	    version_ptrs.push_back((int64_t) version_ptr);
+            old_versions.push_back(titem->read_value<int64_t>());
+            preceding_duplicate_read_.push_back(preceding_duplicate_read(titem));
         }
 
-        // XXX should do this parallel
-        if (!Sto::clients[server]->check(tuid, version_ptrs, versions))
+        // XXX: should do this parallel 
+        if (!Sto::clients[server]->check(tuid, version_ptrs, old_versions, 
+             may_duplicate_items_, preceding_duplicate_read_))
+            // XXX: need to deal with abort here
             goto abort;
     }
-
     // fence();
 
     //phase3
+    server_titems_map.clear();
 #if STO_SORT_WRITESET
     // XXX: not supported for distributed
     for (unsigned tidx = first_write_; tidx != tset_size_; ++tidx) {
@@ -411,7 +419,7 @@ bool Transaction::try_commit() {
     }
 
     // make install RPC calls to remote servers
-    for (auto server_titems : server_write_titems_map) {
+    for (auto server_titems : server_titems_map) {
         auto server = server_titems.first;
         auto titems = server_titems.second;
         // TODO
@@ -539,7 +547,7 @@ void Sto::initialize_dist_sto(int server_id, int total_servers) {
     pthread_create(&thread, NULL, runServer, Sto::server);
 
     // give the server enough time to start
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     // Initialize a client for each peer this server talks to
     for (int i = 0; i < total_servers; i++) {
