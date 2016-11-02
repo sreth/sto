@@ -1,8 +1,9 @@
 #pragma once
+#include "DistSTOServer.hh"
 #include "Interface.hh"
 #include "TWrapped.hh"
 
-template <typename T, typename W = TWrapped<T> >
+template <typename T, typename W = TWrapped<T, false> >
 class DistTBox : public TObject {
 public:
     typedef typename W::read_type read_type;
@@ -16,12 +17,23 @@ public:
         : v_(std::forward<Args>(args)...) {
     }
 
-    read_type read() const {
+    read_type read(TransactionTid::type *version = nullptr) const {
         auto item = Sto::item(this, 0);
-        if (item.has_write())
+        if (item.has_write()) {
             return item.template write_value<T>();
-        else
-            return v_.read(item, vers_);
+        } else {
+            if (Sto::server->is_local_obj(this)) {
+                return v_.read(item, vers_);
+            } else {
+                std::string buf;
+                Sto::clients[Sto::server->obj_reside_on(this)]->read(buf, (int64_t) this);
+                TransactionTid::type v = *(TransactionTid::type *) buf.data();
+                if (version != nullptr)
+                    *version = v;
+                Sto::item(this, 0).add_read(v);
+                return *(T *) (buf.data() + sizeof(TransactionTid::type));
+            }
+        }
     }
 
     void write(const T& x) {
@@ -62,7 +74,12 @@ public:
         return *this;
     }
 
-    const T& nontrans_read() const {
+    // valid on local objects only for now
+    // this is not atomic either
+    const T& nontrans_read(TransactionTid::type *version = nullptr) const {
+        if (version != nullptr) {
+            *version = vers_.value();
+        }
         return v_.access();
     }
 
