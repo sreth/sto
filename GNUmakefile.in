@@ -94,7 +94,7 @@ MASSTREE_OBJS = $(MASSTREEDIR)/kvio.o \
 	$(MASSTREEDIR)/string_slice.o
 
 DISTSTO_GEN := DistSTO.cc DistSTO_constants.cpp DistSTO_types.cpp DistSTO.h DistSTO_constants.h DistSTO_types.h
-DISTSTO_SRC := DistSTO.cc DistSTO_constants.cc DistSTO_types.cc
+DISTSTO_SRC := DistSTO.cc DistSTO_constants.cc DistSTO_types.cc DistSTOServer.cc
 DISTSTO_DEPS := $(patsubst %.cc,%.o, $(DISTSTO_SRC))
 DISTSTO_OBJS := $(DISTSTO_DEPS)
 
