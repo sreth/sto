@@ -68,11 +68,12 @@ void read(std::string& _return, const int64_t objid) {
 
 // Used to lock modified objects. Return server version if success otherwise a negative value
 int64_t lock(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<bool> & has_read) {
+    TransactionTid::type *version_ptr;
     for (int i = 0; i < version_ptrs.size(); i++) {
-        TransactionTid::type *version = (TransactionTid::type*) version_ptrs[i];
+        version_ptr = (TransactionTid::type*) version_ptrs[i];
         unsigned n = 0;
         while (1) {
-            if (TransactionTid::try_lock(*version, tuid))
+            if (TransactionTid::try_lock(*version_ptr, tuid))
                 break;
             ++n;
 # if STO_SPIN_EXPBACKOFF
@@ -93,8 +94,18 @@ int64_t lock(const int32_t tuid, const std::vector<int64_t> & version_ptrs, cons
     return 0;
 }
 
-bool check(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<int64_t> & versions) {
-    return false;
+// Used to check if versions of read object have changed 
+bool check(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<int64_t> & old_versions, 
+           const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) {
+    TransactionTid::type *version_ptr;
+    for (int i = 0; i < version_ptrs.size(); i++) {
+        version_ptr = (TransactionTid::type*) version_ptrs[i];
+        if (!TransactionTid::check_version(*version_ptr, old_versions[i])
+           && (!may_duplicate_items_ || !preceding_duplicate_read_[i])) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void install(const int32_t tuid, const int64_t tid, const std::vector<std::string> & written_values) {

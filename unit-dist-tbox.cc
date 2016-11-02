@@ -253,12 +253,11 @@ int main(int argc, char *argv[]) {
     Sto::initialize_dist_sto(server_id, total_servers);
 
     testSimpleInt();
-
-    //testSimpleString();
-    //testConcurrentInt();
-    //testOpacity1();
-    //testNoOpacity1();
-    //testStringWrapper();
+    testSimpleString();
+    testConcurrentInt();
+    testOpacity1();
+    testNoOpacity1();
+    testStringWrapper();
 
     return 0;
 }
