@@ -469,7 +469,6 @@ std::ostream& operator<<(std::ostream& w, const TransactionGuard& txn) {
 int Sto::total_servers = 0;
 DistSTOServer* Sto::server = nullptr;
 std::vector<DistSTOClient*> Sto::clients;
-std::unordered_map<int32_t, std::vector<int64_t>> Sto::tuid_version_ptrs;
 
 void* runServer(void *server) {
     ((DistSTOServer *) server)->serve();
@@ -482,7 +481,7 @@ void* runServer(void *server) {
 void Sto::initialize_dist_sto(int server_id, int total_servers) {
     assert(server_id >= 0 && server_id < total_servers);
     
-    Sto::server = new DistSTOServer(server_id, 9090, true);
+    Sto::server = new DistSTOServer(server_id, 9090);
     Sto::total_servers = total_servers;
 
     // start the server then returns immediately
@@ -510,6 +509,7 @@ void Sto::initialize_dist_sto(int server_id, int total_servers) {
 int32_t TThread::get_tuid() {
     int32_t tuid = (Sto::server->id() << 3) | TThread::id();
     assert(tuid >= 0 && tuid < 32); 
-    return tuid; 
+//    return tuid; 
+    return TThread::id();
 }
 

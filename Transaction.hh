@@ -674,9 +674,6 @@ public:
     // a client for each peer that this server talks to
     static std::vector<DistSTOClient*> clients;
 
-    // map transaction id to modified objects
-    static std::unordered_map<int32_t, std::vector<int64_t>> tuid_version_ptrs;
-
     // this is called once to initialize the system
     static void initialize_dist_sto(int this_server_id, int total_servers);
 
