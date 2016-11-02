@@ -2,6 +2,17 @@
 #include "DistSTOServer.hh"
 #include <typeinfo>
 
+#include <thrift/protocol/TBinaryProtocol.h>
+#include <thrift/transport/TServerSocket.h>
+#include <thrift/transport/TBufferTransports.h>
+#include <thrift/transport/TSocket.h>
+#include <thrift/transport/TBufferTransports.h>
+
+using namespace ::apache::thrift;
+using namespace ::apache::thrift::protocol;
+using namespace ::apache::thrift::transport;
+using namespace ::apache::thrift::server;
+
 Transaction::testing_type Transaction::testing;
 threadinfo_t Transaction::tinfo[MAX_THREADS];
 __thread int TThread::the_id;
@@ -228,10 +239,13 @@ bool Transaction::try_commit() {
         TXP_INCREMENT(txp_commit_time_nonopaque);
 #if !CONSISTENCY_CHECK
     // commit immediately if read-only transaction with opacity
+    // XXX: removed for distributed STO
+    /*
     if (!any_writes_ && !any_nonopaque_) {
         stop(true, nullptr, 0);
         return true;
     }
+    */
 #endif
 
     state_ = s_committing;
@@ -286,8 +300,7 @@ bool Transaction::try_commit() {
         std::vector<int64_t> version_ptrs;
         std::vector<bool> has_read;
         for (auto titem: titems) {
-            version_ptr = titem->owner()->version_ptr(titem->key<int>());
-	    version_ptrs.push_back((int64_t) version_ptr);
+            version_ptrs.push_back((int64_t) titem->owner()->version_ptr(titem->key<int>()));
             has_read.push_back(titem->has_read());
         }
 
@@ -313,7 +326,6 @@ bool Transaction::try_commit() {
 
     if (nwriteset) {
         // map each server to a list of modified objects that reside on that server
-        std::unordered_map<int, std::vector<TransItem*>> server_titems_map;
         state_ = s_committing_locked;
         auto writeset_end = writeset + nwriteset;
         for (auto it = writeset; it != writeset_end; ) {
@@ -326,6 +338,7 @@ bool Transaction::try_commit() {
             ++it;
         }
     }
+    // XXX distributed does not work in this case
 
 #endif
 
@@ -379,7 +392,9 @@ bool Transaction::try_commit() {
     // fence();
 
     //phase3
+    server_titems_map.clear();
 #if STO_SORT_WRITESET
+    // XXX: not supported for distributed
     for (unsigned tidx = first_write_; tidx != tset_size_; ++tidx) {
         it = &tset_[tidx / tset_chunk][tidx % tset_chunk];
         if (it->has_write()) {
@@ -391,14 +406,25 @@ bool Transaction::try_commit() {
     if (nwriteset) {
         auto writeset_end = writeset + nwriteset;
         for (auto idxit = writeset; idxit != writeset_end; ++idxit) {
-            if (likely(*idxit < tset_initial_capacity))
-                it = &tset0_[*idxit];
-            else
-                it = &tset_[*idxit / tset_chunk][*idxit % tset_chunk];
-            TXP_INCREMENT(txp_total_w);
-            it->owner()->install(*it, *this);
+            // if local then proceed as usual
+            if (Sto::server->is_local_obj(it->owner())) {
+               if (likely(*idxit < tset_initial_capacity))
+                   it = &tset0_[*idxit];
+               else
+                   it = &tset_[*idxit / tset_chunk][*idxit % tset_chunk];
+               TXP_INCREMENT(txp_total_w);
+               it->owner()->install(*it, *this);
+            }
         }
     }
+
+    // make install RPC calls to remote servers
+    for (auto server_titems : server_titems_map) {
+        auto server = server_titems.first;
+        auto titems = server_titems.second;
+        // TODO
+    }
+
 #endif
 
     // fence();

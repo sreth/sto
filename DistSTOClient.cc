@@ -15,7 +15,8 @@ int main(int argc, char **argv) {
 
   DistSTOClient client(protocol);
   transport->open();
-  client.abort(12);
+  std::vector<int64_t> ids;
+  client.abort(12, ids);
   transport->close();
 
   return 0;
