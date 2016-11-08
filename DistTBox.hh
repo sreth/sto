@@ -105,10 +105,6 @@ public:
         w << "}";
     }
 
-    void * version_ptr(int key) override {
-         return &vers_;
-    }
-
 protected:
     version_type vers_;
     W v_;

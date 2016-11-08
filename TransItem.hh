@@ -6,6 +6,7 @@
 #include "Interface.hh"
 #include "Packer.hh"
 #include "compiler.hh"
+#include <cstring>
 
 class TransProxy;
 
@@ -180,6 +181,13 @@ class TransItem {
     TransItem& clear_needs_unlock() {
         __rm_flags(lock_bit);
         return *this;
+    }
+
+    std::string to_string() {
+	std::string str = std::string();
+        str.resize(sizeof(TransItem));
+        std::memcpy((void *) str.data(), (void *) this, sizeof(TransItem));
+        return str;
     }
 
 private:
