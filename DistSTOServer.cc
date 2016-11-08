@@ -6,6 +6,7 @@
 typedef DistTBox<int64_t> box_type;
 
 void DistSTOServer::read(std::string& _return, const int64_t objid) {
+/*
     // initial hack to avoid dealing with objids - assume it is a pointer to a TObject with type int64_t
     // eventually will need some sort of dynamic dispatch here
     box_type &tbox = *((box_type *) objid);
@@ -14,56 +15,46 @@ void DistSTOServer::read(std::string& _return, const int64_t objid) {
     int64_t val = tbox.nontrans_read(&version);
     memcpy((void *) _return.data(), (void *) &version, sizeof(TransactionTid::type));
     memcpy((void *) _return.data() + sizeof(TransactionTid::type), (void *) &val, sizeof(box_type::read_type));
+*/
 }
 
 #define dprintf(...) printf(__VA_ARGS__)
 // #define dprintf(format, ...)
 
 // Used to lock modified objects. Return server version if success otherwise a negative value
-int64_t DistSTOServer::lock(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<bool> & has_read) {
-    dprintf("lock %d objects ... ", version_ptrs.size());
-    TransactionTid::type *version_ptr;
-    for (int i = 0; i < version_ptrs.size(); i++) {
-        version_ptr = (TransactionTid::type*) version_ptrs[i];
-        unsigned n = 0;
-        while (1) {
-            if (TransactionTid::try_lock(*version_ptr, tuid))
-                break;
-            ++n;
-# if STO_SPIN_EXPBACKOFF
-            if (has_read[i] || n == STO_SPIN_BOUND_WRITE) {
-                dprintf("fail\n");
-                return -1;
-            }
-            if (n > 3)
-                for (unsigned x = 1 << std::min(15U, n - 2); x; --x)
-                    relax_fence();
-# else
-            if (has_read[i] || n == (1 << STO_SPIN_BOUND_WRITE)) {
-                dprintf("fail\n");
-                return -1;
-            }
-# endif
-            relax_fence();
-        }
+int64_t DistSTOServer::lock(const int32_t tuid, const std::vector<std::string> & titems) {
+    TransItem titem;
+    Transaction txn = Transaction(tuid);
+    int index = 0;
+    while (index < titems.size()) {
+        titem = *((TransItem *) titems[index].data());
+        if (!titem.owner()->lock(titem, txn))
+		goto abort_lock;
+        index++;
     }
-    dprintf("done\n");
     return 0;
+
+abort_lock:
+    while (index > 0) {
+        index--;
+        titem = *((TransItem *) titems[index].data());
+        titem.owner()->unlock(titem);
+    }
+    return -1;
 }
 
-
-bool DistSTOServer::check(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<int64_t> & old_versions, 
-                          const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) {
-    dprintf("check %d objects ... ", version_ptrs.size());
-    TransactionTid::type *version_ptr;
-    for (int i = 0; i < version_ptrs.size(); i++) {
-        version_ptr = (TransactionTid::type*) version_ptrs[i];
-        if (!TransactionTid::check_version(*version_ptr, old_versions[i])
-           && (!may_duplicate_items_ || !preceding_duplicate_read_[i])) {
+// Used to check if versions of read object have changed 
+bool DistSTOServer::check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, 
+           const std::vector<bool> & preceding_duplicate_read_) {
+    TransItem titem;
+    Transaction txn = Transaction(tuid);
+    for (int i = 0; i < titems.size(); i++) {
+        titem = *((TransItem *) titems[i].data());
+        if (!titem.owner()->check(titem, txn)
+            && (!may_duplicate_items_ || !preceding_duplicate_read_[i])) {
             return false;
         }
     }
-    dprintf("done\n");
     return true;
 }
 

@@ -3,7 +3,7 @@
 #include "Interface.hh"
 #include "TWrapped.hh"
 
-template <typename T, typename W = TWrapped<T, false> >
+template <typename T, typename W = TWrapped<T> >
 class DistTBox : public TObject {
 public:
     typedef typename W::read_type read_type;
@@ -22,8 +22,9 @@ public:
         if (item.has_write()) {
             return item.template write_value<T>();
         } else {
-            if (Sto::server->is_local_obj(this)) {
+            //if (Sto::server->is_local_obj(this)) {
                 return v_.read(item, vers_);
+/*
             } else {
                 std::string buf;
                 Sto::clients[Sto::server->obj_reside_on(this)]->read(buf, (int64_t) this);
@@ -33,7 +34,8 @@ public:
                 Sto::item(this, 0).add_read(v);
                 return *(T *) (buf.data() + sizeof(TransactionTid::type));
             }
-        }
+*/  
+      }
     }
 
     void write(const T& x) {
@@ -73,7 +75,7 @@ public:
         write(x.read());
         return *this;
     }
-
+/*
     // valid on local objects only for now
     // this is not atomic either
     const T& nontrans_read(TransactionTid::type *version = nullptr) const {
@@ -82,6 +84,11 @@ public:
         }
         return v_.access();
     }
+*/
+    const T& nontrans_read() const {
+        return v_.access();
+    }
+
 
     T& nontrans_access() {
         return v_.access();
@@ -120,10 +127,6 @@ public:
         if (item.has_write())
             w << " =" << item.write_value<T>();
         w << "}";
-    }
-
-    void * version_ptr(int key) override {
-         return &vers_;
     }
 
 protected:

@@ -255,9 +255,8 @@ bool Transaction::try_commit() {
     writeset[0] = tset_size_;
 
     TransItem* it = nullptr;
-    void *version_ptr;
     int32_t tuid = TThread::get_tuid();
-    std::unordered_map<int, std::vector<TransItem*>> server_titems_map;
+    std::unordered_map<int, std::vector<TransItem *>> server_titems_map;
     for (unsigned tidx = 0; tidx != tset_size_; ++tidx) {
         it = (tidx % tset_chunk ? it + 1 : tset_[tidx / tset_chunk]);
         if (it->has_write()) {
@@ -277,7 +276,8 @@ bool Transaction::try_commit() {
                 }
                 it->__or_flags(TransItem::lock_bit);
             } else {
-                server_titems_map[DistSTOServer::obj_reside_on(it->owner())].push_back(it);
+		int server = DistSTOServer::obj_reside_on(it->owner());
+                server_titems_map[server].push_back(it);
             }
 #endif
         }
@@ -297,15 +297,13 @@ bool Transaction::try_commit() {
     for (auto server_titems : server_titems_map) {
         auto server = server_titems.first;
         auto titems = server_titems.second;
-        std::vector<int64_t> version_ptrs;
-        std::vector<bool> has_read;
-        for (auto titem: titems) {
-            version_ptrs.push_back((int64_t) titem->owner()->version_ptr(titem->key<int>()));
-            has_read.push_back(titem->has_read());
-        }
+	std::vector<std::string> str_titems;
+	for (auto titem : titems) {
+	    str_titems.push_back(titem->to_string());
+	} 
 
         // XXX should do this parallel 
-        if (Sto::clients[server]->lock(tuid, version_ptrs, has_read) < 0)
+        if (Sto::clients[server]->lock(tuid, str_titems) < 0)
             // XXX: need to deal with abort
             goto abort;
 
@@ -364,7 +362,8 @@ bool Transaction::try_commit() {
                     goto abort;
                 }
             } else {
-                server_titems_map[DistSTOServer::obj_reside_on(it->owner())].push_back(it);
+                int server = DistSTOServer::obj_reside_on(it->owner());
+                server_titems_map[server].push_back(it);
             }
         }
     }
@@ -373,19 +372,15 @@ bool Transaction::try_commit() {
     for (auto server_titems : server_titems_map) {
         auto server = server_titems.first;
         auto titems = server_titems.second;
-        std::vector<int64_t> version_ptrs;
-        std::vector<int64_t> old_versions;
+        std::vector<std::string> str_titems;
         std::vector<bool> preceding_duplicate_read_;
         for (auto titem: titems) {
-            version_ptr = titem->owner()->version_ptr(titem->key<int>());
-	    version_ptrs.push_back((int64_t) version_ptr);
-            old_versions.push_back(titem->read_value<int64_t>());
+            str_titems.push_back(titem->to_string());
             preceding_duplicate_read_.push_back(preceding_duplicate_read(titem));
         }
 
         // XXX: should do this parallel 
-        if (!Sto::clients[server]->check(tuid, version_ptrs, old_versions, 
-             may_duplicate_items_, preceding_duplicate_read_))
+        if (!Sto::clients[server]->check(tuid, str_titems, may_duplicate_items_, preceding_duplicate_read_))
             // XXX: need to deal with abort here
             goto abort;
     }
@@ -407,14 +402,14 @@ bool Transaction::try_commit() {
         auto writeset_end = writeset + nwriteset;
         for (auto idxit = writeset; idxit != writeset_end; ++idxit) {
             // if local then proceed as usual
-            if (Sto::server->is_local_obj(it->owner())) {
+            //if (Sto::server->is_local_obj(it->owner())) {
                if (likely(*idxit < tset_initial_capacity))
                    it = &tset0_[*idxit];
                else
                    it = &tset_[*idxit / tset_chunk][*idxit % tset_chunk];
                TXP_INCREMENT(txp_total_w);
                it->owner()->install(*it, *this);
-            }
+            //}
         }
     }
 

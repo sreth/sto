@@ -1,7 +1,7 @@
 #undef NDEBUG
 #include <string>
 #include <iostream>
-#include <cassert>
+#include <assert.h>
 #include <vector>
 #include "Transaction.hh"
 #include "DistTBox.hh"
@@ -11,16 +11,16 @@
 #define GUARDED if (TransactionGuard tguard{})
 
 void testSimpleInt() {
-	DistTBox<int64_t> f;
+	DistTBox<int> f;
 
     {
         TransactionGuard t;
         f = 100;
     }
 
-    {
+	{
         TransactionGuard t2;
-        int64_t f_read = f;
+        int f_read = f;
         assert(f_read == 100);
     }
 
@@ -30,12 +30,12 @@ void testSimpleInt() {
 void testSimpleString() {
 	DistTBox<std::string> f;
 
-    {
+	{
         TransactionGuard t;
         f = "100";
     }
 
-    {
+	{
         TransactionGuard t2;
         std::string f_read = f;
         assert(f_read.compare("100") == 0);

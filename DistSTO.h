@@ -22,8 +22,8 @@ class DistSTOIf {
  public:
   virtual ~DistSTOIf() {}
   virtual void read(std::string& _return, const int64_t objid) = 0;
-  virtual int64_t lock(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<bool> & has_read) = 0;
-  virtual bool check(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<int64_t> & old_versions, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) = 0;
+  virtual int64_t lock(const int32_t tuid, const std::vector<std::string> & titems) = 0;
+  virtual bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) = 0;
   virtual void install(const int32_t tuid, const int64_t tid, const std::vector<int64_t> & objids, const std::vector<int64_t> & version_ptrs, const std::vector<std::string> & written_values) = 0;
   virtual void abort(const int32_t tuid, const std::vector<int64_t> & unlock_objids) = 0;
 };
@@ -58,11 +58,11 @@ class DistSTONull : virtual public DistSTOIf {
   void read(std::string& /* _return */, const int64_t /* objid */) {
     return;
   }
-  int64_t lock(const int32_t /* tuid */, const std::vector<int64_t> & /* version_ptrs */, const std::vector<bool> & /* has_read */) {
+  int64_t lock(const int32_t /* tuid */, const std::vector<std::string> & /* titems */) {
     int64_t _return = 0;
     return _return;
   }
-  bool check(const int32_t /* tuid */, const std::vector<int64_t> & /* version_ptrs */, const std::vector<int64_t> & /* old_versions */, const bool /* may_duplicate_items_ */, const std::vector<bool> & /* preceding_duplicate_read_ */) {
+  bool check(const int32_t /* tuid */, const std::vector<std::string> & /* titems */, const bool /* may_duplicate_items_ */, const std::vector<bool> & /* preceding_duplicate_read_ */) {
     bool _return = false;
     return _return;
   }
@@ -179,10 +179,9 @@ class DistSTO_read_presult {
 };
 
 typedef struct _DistSTO_lock_args__isset {
-  _DistSTO_lock_args__isset() : tuid(false), version_ptrs(false), has_read(false) {}
+  _DistSTO_lock_args__isset() : tuid(false), titems(false) {}
   bool tuid :1;
-  bool version_ptrs :1;
-  bool has_read :1;
+  bool titems :1;
 } _DistSTO_lock_args__isset;
 
 class DistSTO_lock_args {
@@ -195,24 +194,19 @@ class DistSTO_lock_args {
 
   virtual ~DistSTO_lock_args() throw();
   int32_t tuid;
-  std::vector<int64_t>  version_ptrs;
-  std::vector<bool>  has_read;
+  std::vector<std::string>  titems;
 
   _DistSTO_lock_args__isset __isset;
 
   void __set_tuid(const int32_t val);
 
-  void __set_version_ptrs(const std::vector<int64_t> & val);
-
-  void __set_has_read(const std::vector<bool> & val);
+  void __set_titems(const std::vector<std::string> & val);
 
   bool operator == (const DistSTO_lock_args & rhs) const
   {
     if (!(tuid == rhs.tuid))
       return false;
-    if (!(version_ptrs == rhs.version_ptrs))
-      return false;
-    if (!(has_read == rhs.has_read))
+    if (!(titems == rhs.titems))
       return false;
     return true;
   }
@@ -234,8 +228,7 @@ class DistSTO_lock_pargs {
 
   virtual ~DistSTO_lock_pargs() throw();
   const int32_t* tuid;
-  const std::vector<int64_t> * version_ptrs;
-  const std::vector<bool> * has_read;
+  const std::vector<std::string> * titems;
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
@@ -297,10 +290,9 @@ class DistSTO_lock_presult {
 };
 
 typedef struct _DistSTO_check_args__isset {
-  _DistSTO_check_args__isset() : tuid(false), version_ptrs(false), old_versions(false), may_duplicate_items_(false), preceding_duplicate_read_(false) {}
+  _DistSTO_check_args__isset() : tuid(false), titems(false), may_duplicate_items_(false), preceding_duplicate_read_(false) {}
   bool tuid :1;
-  bool version_ptrs :1;
-  bool old_versions :1;
+  bool titems :1;
   bool may_duplicate_items_ :1;
   bool preceding_duplicate_read_ :1;
 } _DistSTO_check_args__isset;
@@ -315,8 +307,7 @@ class DistSTO_check_args {
 
   virtual ~DistSTO_check_args() throw();
   int32_t tuid;
-  std::vector<int64_t>  version_ptrs;
-  std::vector<int64_t>  old_versions;
+  std::vector<std::string>  titems;
   bool may_duplicate_items_;
   std::vector<bool>  preceding_duplicate_read_;
 
@@ -324,9 +315,7 @@ class DistSTO_check_args {
 
   void __set_tuid(const int32_t val);
 
-  void __set_version_ptrs(const std::vector<int64_t> & val);
-
-  void __set_old_versions(const std::vector<int64_t> & val);
+  void __set_titems(const std::vector<std::string> & val);
 
   void __set_may_duplicate_items_(const bool val);
 
@@ -336,9 +325,7 @@ class DistSTO_check_args {
   {
     if (!(tuid == rhs.tuid))
       return false;
-    if (!(version_ptrs == rhs.version_ptrs))
-      return false;
-    if (!(old_versions == rhs.old_versions))
+    if (!(titems == rhs.titems))
       return false;
     if (!(may_duplicate_items_ == rhs.may_duplicate_items_))
       return false;
@@ -364,8 +351,7 @@ class DistSTO_check_pargs {
 
   virtual ~DistSTO_check_pargs() throw();
   const int32_t* tuid;
-  const std::vector<int64_t> * version_ptrs;
-  const std::vector<int64_t> * old_versions;
+  const std::vector<std::string> * titems;
   const bool* may_duplicate_items_;
   const std::vector<bool> * preceding_duplicate_read_;
 
@@ -663,11 +649,11 @@ class DistSTOClient : virtual public DistSTOIf {
   void read(std::string& _return, const int64_t objid);
   void send_read(const int64_t objid);
   void recv_read(std::string& _return);
-  int64_t lock(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<bool> & has_read);
-  void send_lock(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<bool> & has_read);
+  int64_t lock(const int32_t tuid, const std::vector<std::string> & titems);
+  void send_lock(const int32_t tuid, const std::vector<std::string> & titems);
   int64_t recv_lock();
-  bool check(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<int64_t> & old_versions, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
-  void send_check(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<int64_t> & old_versions, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
+  bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
+  void send_check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
   bool recv_check();
   void install(const int32_t tuid, const int64_t tid, const std::vector<int64_t> & objids, const std::vector<int64_t> & version_ptrs, const std::vector<std::string> & written_values);
   void send_install(const int32_t tuid, const int64_t tid, const std::vector<int64_t> & objids, const std::vector<int64_t> & version_ptrs, const std::vector<std::string> & written_values);
@@ -741,22 +727,22 @@ class DistSTOMultiface : virtual public DistSTOIf {
     return;
   }
 
-  int64_t lock(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<bool> & has_read) {
+  int64_t lock(const int32_t tuid, const std::vector<std::string> & titems) {
     size_t sz = ifaces_.size();
     size_t i = 0;
     for (; i < (sz - 1); ++i) {
-      ifaces_[i]->lock(tuid, version_ptrs, has_read);
+      ifaces_[i]->lock(tuid, titems);
     }
-    return ifaces_[i]->lock(tuid, version_ptrs, has_read);
+    return ifaces_[i]->lock(tuid, titems);
   }
 
-  bool check(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<int64_t> & old_versions, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) {
+  bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) {
     size_t sz = ifaces_.size();
     size_t i = 0;
     for (; i < (sz - 1); ++i) {
-      ifaces_[i]->check(tuid, version_ptrs, old_versions, may_duplicate_items_, preceding_duplicate_read_);
+      ifaces_[i]->check(tuid, titems, may_duplicate_items_, preceding_duplicate_read_);
     }
-    return ifaces_[i]->check(tuid, version_ptrs, old_versions, may_duplicate_items_, preceding_duplicate_read_);
+    return ifaces_[i]->check(tuid, titems, may_duplicate_items_, preceding_duplicate_read_);
   }
 
   void install(const int32_t tuid, const int64_t tid, const std::vector<int64_t> & objids, const std::vector<int64_t> & version_ptrs, const std::vector<std::string> & written_values) {
@@ -810,11 +796,11 @@ class DistSTOConcurrentClient : virtual public DistSTOIf {
   void read(std::string& _return, const int64_t objid);
   int32_t send_read(const int64_t objid);
   void recv_read(std::string& _return, const int32_t seqid);
-  int64_t lock(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<bool> & has_read);
-  int32_t send_lock(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<bool> & has_read);
+  int64_t lock(const int32_t tuid, const std::vector<std::string> & titems);
+  int32_t send_lock(const int32_t tuid, const std::vector<std::string> & titems);
   int64_t recv_lock(const int32_t seqid);
-  bool check(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<int64_t> & old_versions, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
-  int32_t send_check(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<int64_t> & old_versions, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
+  bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
+  int32_t send_check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
   bool recv_check(const int32_t seqid);
   void install(const int32_t tuid, const int64_t tid, const std::vector<int64_t> & objids, const std::vector<int64_t> & version_ptrs, const std::vector<std::string> & written_values);
   int32_t send_install(const int32_t tuid, const int64_t tid, const std::vector<int64_t> & objids, const std::vector<int64_t> & version_ptrs, const std::vector<std::string> & written_values);

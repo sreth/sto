@@ -67,11 +67,11 @@ public:
     void read(std::string& _return, const int64_t objid);
 
     // Used to lock modified objects. Return server version if success otherwise a negative value
-    int64_t lock(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<bool> & has_read);
+    int64_t lock(const int32_t tuid, const std::vector<std::string> & titems); 
 
     // Used to check if versions of read object have changed 
-    bool check(const int32_t tuid, const std::vector<int64_t> & version_ptrs, const std::vector<int64_t> & old_versions, 
-               const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
+    bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, 
+               const std::vector<bool> & preceding_duplicate_read_);
 
     void install(const int32_t tuid, const int64_t tid, const std::vector<int64_t> & write_objids, 
                  const std::vector<int64_t> & version_ptrs, const std::vector<std::string> & written_values);

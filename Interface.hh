@@ -581,7 +581,6 @@ public:
         (void) item, (void) committed;
     }
     virtual void print(std::ostream& w, const TransItem& item) const;
-    virtual void * version_ptr(int key) { return nullptr; }
 };
 
 typedef TObject Shared;

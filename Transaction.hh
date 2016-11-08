@@ -294,6 +294,12 @@ private:
         state_ = s_aborted;
     }
 
+    Transaction(int threadid)
+        : threadid_(threadid), is_test_(false) {
+        initialize();
+        state_ = s_aborted;
+    }
+
     ~Transaction();
 
     // reset data so we can be reused for another transaction
@@ -655,6 +661,7 @@ private:
     friend class Sto;
     friend class TestTransaction;
     friend class TNonopaqueVersion;
+    friend class DistSTOServer;
 };
 
 class DistSTOServer;
