@@ -57,27 +57,14 @@ bool DistSTOServer::check(const int32_t tuid, const std::vector<std::string> & t
     }
     return true;
 }
-
-void DistSTOServer::install(const int32_t tuid, const int64_t tid, const std::vector<int64_t> & write_objids, const std::vector<int64_t> & version_ptrs, const std::vector<std::string> & written_values) {
-    dprintf("install %d objects ... ", write_objids.size());
-    if (write_objids.size() != written_values.size()) {
-        dprintf("bug\n");
-        return;
+ 
+void DistSTOServer::install(const int32_t tuid, const int64_t tid, const int8_t state, const std::vector<std::string> & titems) {
+    TransItem titem;
+    Transaction txn = Transaction(tuid, state, tid);
+    for (int i = 0; i < titems.size(); i++) {
+        titem = *((TransItem *) titems[i].data());
+        titem.owner()->install(titem, txn);
     }
-
-    for (int i = 0; i < write_objids.size(); i++) {
-        box_type &tbox = *((box_type *) write_objids[i]);
-        if (written_values[i].size() != sizeof(box_type::read_type)) {
-            dprintf("bug\n");
-            return;
-        }
-        auto data = (box_type::read_type *) written_values[i].data();
-        tbox.nontrans_write(*data);
-
-        TransactionTid::type *version = (TransactionTid::type *) version_ptrs[i];
-        TransactionTid::unlock(*version);
-    }
-    dprintf("done\n");
 }
 
 void DistSTOServer::abort(const int32_t tuid, const std::vector<int64_t> & version_ptrs) {

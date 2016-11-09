@@ -296,8 +296,15 @@ private:
 
     Transaction(int threadid)
         : threadid_(threadid), is_test_(false) {
+        // XXX: need to check
         initialize();
         state_ = s_aborted;
+    }
+
+    Transaction(int threadid, uint8_t state, int64_t tid)
+        : threadid_(threadid), state_(state), commit_tid_(tid) {
+        // XXX: need to check 
+        initialize();
     }
 
     ~Transaction();

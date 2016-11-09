@@ -401,15 +401,18 @@ bool Transaction::try_commit() {
     if (nwriteset) {
         auto writeset_end = writeset + nwriteset;
         for (auto idxit = writeset; idxit != writeset_end; ++idxit) {
-            // if local then proceed as usual
-            //if (Sto::server->is_local_obj(it->owner())) {
-               if (likely(*idxit < tset_initial_capacity))
-                   it = &tset0_[*idxit];
-               else
-                   it = &tset_[*idxit / tset_chunk][*idxit % tset_chunk];
-               TXP_INCREMENT(txp_total_w);
+           if (likely(*idxit < tset_initial_capacity))
+               it = &tset0_[*idxit];
+           else
+               it = &tset_[*idxit / tset_chunk][*idxit % tset_chunk];
+           TXP_INCREMENT(txp_total_w);
+           // if local then proceed as usual
+           if (Sto::server->is_local_obj(it->owner())) {
                it->owner()->install(*it, *this);
-            //}
+           } else {
+               int server = DistSTOServer::obj_reside_on(it->owner());
+               server_titems_map[server].push_back(it);
+           }
         }
     }
 
@@ -417,7 +420,12 @@ bool Transaction::try_commit() {
     for (auto server_titems : server_titems_map) {
         auto server = server_titems.first;
         auto titems = server_titems.second;
-        // TODO
+	std::vector<std::string> str_titems;
+	for (auto titem : titems) {
+	    str_titems.push_back(titem->to_string());
+	}
+        // XXX should do this parallel 
+        Sto::clients[server]->install(tuid, commit_tid(), state_, str_titems);
     }
 
 #endif
