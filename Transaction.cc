@@ -272,7 +272,6 @@ bool Transaction::try_commit() {
             if (Sto::server->is_local_obj(it->owner())) {
                 if (!it->owner()->lock(*it, *this)) {
                     mark_abort_because(it, "commit lock");
-                    // XXX: need to deal with abort here
                     goto abort;
                 }
                 it->__or_flags(TransItem::lock_bit);
@@ -288,25 +287,32 @@ bool Transaction::try_commit() {
             TXP_INCREMENT(txp_total_check_predicate);
             if (!it->owner()->check_predicate(*it, *this, true)) {
                 mark_abort_because(it, "commit check_predicate");
-                // XXX: need to deal with abort here
                 goto abort;
             }
         }
     }
 
     // make lock RPC calls to remote servers
-    for (auto server_write_titems : server_write_titems_map) {
-        auto server = server_write_titems.first;
-        auto titems = server_write_titems.second;
+    for (auto iter = server_write_titems_map.begin();
+              iter != server_write_titems_map.end(); 
+              ++iter) {
+        auto server = iter->first;
+        auto titems = iter->second;
 	std::vector<std::string> str_titems;
 	for (auto titem : titems) {
 	    str_titems.push_back(titem->to_string());
 	} 
 
         // XXX should do this parallel 
-        if (Sto::clients[server]->lock(tuid, str_titems) < 0)
-            // XXX: need to deal with abort
+        if (Sto::clients[server]->lock(tuid, str_titems) < 0) {
+            for (auto iter2 = server_write_titems_map.begin();
+                      iter2 != iter;
+                      ++iter2) {
+                auto server = iter2->first;
+                Sto::clients[server]->abort(tuid);    
+            }
             goto abort;
+        }
 
         // successfull lock modified objects so mark their lock bits
         for (auto titem: titems)
@@ -358,7 +364,10 @@ bool Transaction::try_commit() {
                 if (!it->owner()->check(*it, *this)
                     && (!may_duplicate_items_ || !preceding_duplicate_read(it))) {
                     mark_abort_because(it, "commit check");
-                    // XXX: need to deal with abort here
+                    for (auto server_write_titems : server_write_titems_map) {
+                        auto server = server_write_titems.first;
+                        Sto::clients[server]->abort(tuid);
+                    } 
                     goto abort;
                 }
             } else {
@@ -380,9 +389,13 @@ bool Transaction::try_commit() {
         }
 
         // XXX: should do this parallel 
-        if (!Sto::clients[server]->check(tuid, str_titems, may_duplicate_items_, preceding_duplicate_read_))
-            // XXX: need to deal with abort here
+        if (!Sto::clients[server]->check(tuid, str_titems, may_duplicate_items_, preceding_duplicate_read_)) {
+            for (auto server_write_titems : server_write_titems_map) {
+                auto server = server_write_titems.first;
+                Sto::clients[server]->abort(tuid);
+            } 
             goto abort;
+        }
     }
     // fence();
 
