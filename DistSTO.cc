@@ -759,34 +759,6 @@ uint32_t DistSTO_install_args::read(::apache::thrift::protocol::TProtocol* iprot
           xfer += iprot->skip(ftype);
         }
         break;
-      case 3:
-        if (ftype == ::apache::thrift::protocol::T_BYTE) {
-          xfer += iprot->readByte(this->state);
-          this->__isset.state = true;
-        } else {
-          xfer += iprot->skip(ftype);
-        }
-        break;
-      case 5:
-        if (ftype == ::apache::thrift::protocol::T_LIST) {
-          {
-            this->titems.clear();
-            uint32_t _size21;
-            ::apache::thrift::protocol::TType _etype24;
-            xfer += iprot->readListBegin(_etype24, _size21);
-            this->titems.resize(_size21);
-            uint32_t _i25;
-            for (_i25 = 0; _i25 < _size21; ++_i25)
-            {
-              xfer += iprot->readBinary(this->titems[_i25]);
-            }
-            xfer += iprot->readListEnd();
-          }
-          this->__isset.titems = true;
-        } else {
-          xfer += iprot->skip(ftype);
-        }
-        break;
       default:
         xfer += iprot->skip(ftype);
         break;
@@ -812,22 +784,6 @@ uint32_t DistSTO_install_args::write(::apache::thrift::protocol::TProtocol* opro
   xfer += oprot->writeI64(this->tid);
   xfer += oprot->writeFieldEnd();
 
-  xfer += oprot->writeFieldBegin("state", ::apache::thrift::protocol::T_BYTE, 3);
-  xfer += oprot->writeByte(this->state);
-  xfer += oprot->writeFieldEnd();
-
-  xfer += oprot->writeFieldBegin("titems", ::apache::thrift::protocol::T_LIST, 5);
-  {
-    xfer += oprot->writeListBegin(::apache::thrift::protocol::T_STRING, static_cast<uint32_t>(this->titems.size()));
-    std::vector<std::string> ::const_iterator _iter26;
-    for (_iter26 = this->titems.begin(); _iter26 != this->titems.end(); ++_iter26)
-    {
-      xfer += oprot->writeBinary((*_iter26));
-    }
-    xfer += oprot->writeListEnd();
-  }
-  xfer += oprot->writeFieldEnd();
-
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
   return xfer;
@@ -849,22 +805,6 @@ uint32_t DistSTO_install_pargs::write(::apache::thrift::protocol::TProtocol* opr
 
   xfer += oprot->writeFieldBegin("tid", ::apache::thrift::protocol::T_I64, 2);
   xfer += oprot->writeI64((*(this->tid)));
-  xfer += oprot->writeFieldEnd();
-
-  xfer += oprot->writeFieldBegin("state", ::apache::thrift::protocol::T_BYTE, 3);
-  xfer += oprot->writeByte((*(this->state)));
-  xfer += oprot->writeFieldEnd();
-
-  xfer += oprot->writeFieldBegin("titems", ::apache::thrift::protocol::T_LIST, 5);
-  {
-    xfer += oprot->writeListBegin(::apache::thrift::protocol::T_STRING, static_cast<uint32_t>((*(this->titems)).size()));
-    std::vector<std::string> ::const_iterator _iter27;
-    for (_iter27 = (*(this->titems)).begin(); _iter27 != (*(this->titems)).end(); ++_iter27)
-    {
-      xfer += oprot->writeBinary((*_iter27));
-    }
-    xfer += oprot->writeListEnd();
-  }
   xfer += oprot->writeFieldEnd();
 
   xfer += oprot->writeFieldStop();
@@ -983,26 +923,6 @@ uint32_t DistSTO_abort_args::read(::apache::thrift::protocol::TProtocol* iprot) 
           xfer += iprot->skip(ftype);
         }
         break;
-      case 2:
-        if (ftype == ::apache::thrift::protocol::T_LIST) {
-          {
-            this->unlock_objids.clear();
-            uint32_t _size28;
-            ::apache::thrift::protocol::TType _etype31;
-            xfer += iprot->readListBegin(_etype31, _size28);
-            this->unlock_objids.resize(_size28);
-            uint32_t _i32;
-            for (_i32 = 0; _i32 < _size28; ++_i32)
-            {
-              xfer += iprot->readI64(this->unlock_objids[_i32]);
-            }
-            xfer += iprot->readListEnd();
-          }
-          this->__isset.unlock_objids = true;
-        } else {
-          xfer += iprot->skip(ftype);
-        }
-        break;
       default:
         xfer += iprot->skip(ftype);
         break;
@@ -1024,18 +944,6 @@ uint32_t DistSTO_abort_args::write(::apache::thrift::protocol::TProtocol* oprot)
   xfer += oprot->writeI32(this->tuid);
   xfer += oprot->writeFieldEnd();
 
-  xfer += oprot->writeFieldBegin("unlock_objids", ::apache::thrift::protocol::T_LIST, 2);
-  {
-    xfer += oprot->writeListBegin(::apache::thrift::protocol::T_I64, static_cast<uint32_t>(this->unlock_objids.size()));
-    std::vector<int64_t> ::const_iterator _iter33;
-    for (_iter33 = this->unlock_objids.begin(); _iter33 != this->unlock_objids.end(); ++_iter33)
-    {
-      xfer += oprot->writeI64((*_iter33));
-    }
-    xfer += oprot->writeListEnd();
-  }
-  xfer += oprot->writeFieldEnd();
-
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
   return xfer;
@@ -1053,18 +961,6 @@ uint32_t DistSTO_abort_pargs::write(::apache::thrift::protocol::TProtocol* oprot
 
   xfer += oprot->writeFieldBegin("tuid", ::apache::thrift::protocol::T_I32, 1);
   xfer += oprot->writeI32((*(this->tuid)));
-  xfer += oprot->writeFieldEnd();
-
-  xfer += oprot->writeFieldBegin("unlock_objids", ::apache::thrift::protocol::T_LIST, 2);
-  {
-    xfer += oprot->writeListBegin(::apache::thrift::protocol::T_I64, static_cast<uint32_t>((*(this->unlock_objids)).size()));
-    std::vector<int64_t> ::const_iterator _iter34;
-    for (_iter34 = (*(this->unlock_objids)).begin(); _iter34 != (*(this->unlock_objids)).end(); ++_iter34)
-    {
-      xfer += oprot->writeI64((*_iter34));
-    }
-    xfer += oprot->writeListEnd();
-  }
   xfer += oprot->writeFieldEnd();
 
   xfer += oprot->writeFieldStop();
@@ -1327,13 +1223,13 @@ bool DistSTOClient::recv_check()
   throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "check failed: unknown result");
 }
 
-void DistSTOClient::install(const int32_t tuid, const int64_t tid, const int8_t state, const std::vector<std::string> & titems)
+void DistSTOClient::install(const int32_t tuid, const int64_t tid)
 {
-  send_install(tuid, tid, state, titems);
+  send_install(tuid, tid);
   recv_install();
 }
 
-void DistSTOClient::send_install(const int32_t tuid, const int64_t tid, const int8_t state, const std::vector<std::string> & titems)
+void DistSTOClient::send_install(const int32_t tuid, const int64_t tid)
 {
   int32_t cseqid = 0;
   oprot_->writeMessageBegin("install", ::apache::thrift::protocol::T_CALL, cseqid);
@@ -1341,8 +1237,6 @@ void DistSTOClient::send_install(const int32_t tuid, const int64_t tid, const in
   DistSTO_install_pargs args;
   args.tuid = &tuid;
   args.tid = &tid;
-  args.state = &state;
-  args.titems = &titems;
   args.write(oprot_);
 
   oprot_->writeMessageEnd();
@@ -1383,20 +1277,19 @@ void DistSTOClient::recv_install()
   return;
 }
 
-void DistSTOClient::abort(const int32_t tuid, const std::vector<int64_t> & unlock_objids)
+void DistSTOClient::abort(const int32_t tuid)
 {
-  send_abort(tuid, unlock_objids);
+  send_abort(tuid);
   recv_abort();
 }
 
-void DistSTOClient::send_abort(const int32_t tuid, const std::vector<int64_t> & unlock_objids)
+void DistSTOClient::send_abort(const int32_t tuid)
 {
   int32_t cseqid = 0;
   oprot_->writeMessageBegin("abort", ::apache::thrift::protocol::T_CALL, cseqid);
 
   DistSTO_abort_pargs args;
   args.tuid = &tuid;
-  args.unlock_objids = &unlock_objids;
   args.write(oprot_);
 
   oprot_->writeMessageEnd();
@@ -1641,7 +1534,7 @@ void DistSTOProcessor::process_install(int32_t seqid, ::apache::thrift::protocol
 
   DistSTO_install_result result;
   try {
-    iface_->install(args.tuid, args.tid, args.state, args.titems);
+    iface_->install(args.tuid, args.tid);
   } catch (const std::exception& e) {
     if (this->eventHandler_.get() != NULL) {
       this->eventHandler_->handlerError(ctx, "DistSTO.install");
@@ -1694,7 +1587,7 @@ void DistSTOProcessor::process_abort(int32_t seqid, ::apache::thrift::protocol::
 
   DistSTO_abort_result result;
   try {
-    iface_->abort(args.tuid, args.unlock_objids);
+    iface_->abort(args.tuid);
   } catch (const std::exception& e) {
     if (this->eventHandler_.get() != NULL) {
       this->eventHandler_->handlerError(ctx, "DistSTO.abort");
@@ -1987,13 +1880,13 @@ bool DistSTOConcurrentClient::recv_check(const int32_t seqid)
   } // end while(true)
 }
 
-void DistSTOConcurrentClient::install(const int32_t tuid, const int64_t tid, const int8_t state, const std::vector<std::string> & titems)
+void DistSTOConcurrentClient::install(const int32_t tuid, const int64_t tid)
 {
-  int32_t seqid = send_install(tuid, tid, state, titems);
+  int32_t seqid = send_install(tuid, tid);
   recv_install(seqid);
 }
 
-int32_t DistSTOConcurrentClient::send_install(const int32_t tuid, const int64_t tid, const int8_t state, const std::vector<std::string> & titems)
+int32_t DistSTOConcurrentClient::send_install(const int32_t tuid, const int64_t tid)
 {
   int32_t cseqid = this->sync_.generateSeqId();
   ::apache::thrift::async::TConcurrentSendSentry sentry(&this->sync_);
@@ -2002,8 +1895,6 @@ int32_t DistSTOConcurrentClient::send_install(const int32_t tuid, const int64_t 
   DistSTO_install_pargs args;
   args.tuid = &tuid;
   args.tid = &tid;
-  args.state = &state;
-  args.titems = &titems;
   args.write(oprot_);
 
   oprot_->writeMessageEnd();
@@ -2068,13 +1959,13 @@ void DistSTOConcurrentClient::recv_install(const int32_t seqid)
   } // end while(true)
 }
 
-void DistSTOConcurrentClient::abort(const int32_t tuid, const std::vector<int64_t> & unlock_objids)
+void DistSTOConcurrentClient::abort(const int32_t tuid)
 {
-  int32_t seqid = send_abort(tuid, unlock_objids);
+  int32_t seqid = send_abort(tuid);
   recv_abort(seqid);
 }
 
-int32_t DistSTOConcurrentClient::send_abort(const int32_t tuid, const std::vector<int64_t> & unlock_objids)
+int32_t DistSTOConcurrentClient::send_abort(const int32_t tuid)
 {
   int32_t cseqid = this->sync_.generateSeqId();
   ::apache::thrift::async::TConcurrentSendSentry sentry(&this->sync_);
@@ -2082,7 +1973,6 @@ int32_t DistSTOConcurrentClient::send_abort(const int32_t tuid, const std::vecto
 
   DistSTO_abort_pargs args;
   args.tuid = &tuid;
-  args.unlock_objids = &unlock_objids;
   args.write(oprot_);
 
   oprot_->writeMessageEnd();

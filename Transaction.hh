@@ -294,16 +294,15 @@ private:
         state_ = s_aborted;
     }
 
+    // Distributed STO
     Transaction(int threadid)
         : threadid_(threadid), is_test_(false) {
-        // XXX: need to check
         initialize();
-        state_ = s_aborted;
     }
 
-    Transaction(int threadid, uint8_t state, int64_t tid)
-        : threadid_(threadid), state_(state), commit_tid_(tid) {
-        // XXX: need to check 
+    // Distributed STO
+    Transaction(int threadid, int64_t tid)
+        : threadid_(threadid), commit_tid_(tid), is_test_(false) {
         initialize();
     }
 
@@ -582,7 +581,8 @@ public:
 
     // committing
     tid_type commit_tid() const {
-        assert(state_ == s_committing_locked || state_ == s_committing);
+        // XXX: Distributed STO
+        // assert(state_ == s_committing_locked || state_ == s_committing);
         if (!commit_tid_)
             commit_tid_ = fetch_and_add(&_TID, TransactionTid::increment_value);
         return commit_tid_;
@@ -604,7 +604,8 @@ public:
         vers.set_version(v | flags);
     }
     void set_version_unlock(TNonopaqueVersion& vers, TransItem& item, TNonopaqueVersion::type flags = 0) const {
-        assert(state_ == s_committing_locked || state_ == s_committing);
+        // XXX: Distributed sto
+        // assert(state_ == s_committing_locked || state_ == s_committing);
         tid_type v = commit_tid_ ? commit_tid_ : TransactionTid::next_unflagged_nonopaque_version(vers.value());
         vers.set_version_unlock(v | flags);
         item.clear_needs_unlock();

@@ -22,8 +22,9 @@ class DistSTOServer : virtual public DistSTOIf {
 private:
     int _id;
     TSimpleServer *_server;
-public:
+    std::unordered_map<int32_t, std::vector<std::string>> _tuid_titems;
 
+public:
     DistSTOServer(int id, int port) {
         // Currently we can have at most 4 servers, need to change later
         assert( id >= 0 && id < 4);
@@ -34,6 +35,7 @@ public:
         shared_ptr<TTransportFactory> transportFactory(new TBufferedTransportFactory());
         shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
         _server = new TSimpleServer(processor, serverTransport, transportFactory, protocolFactory);
+        _tuid_titems = std::unordered_map<int32_t, std::vector<std::string>>();
     }
 
     // unique server ID assigned by the user
@@ -71,9 +73,8 @@ public:
     bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, 
                const std::vector<bool> & preceding_duplicate_read_);
 
-    void install(const int32_t tuid, const int64_t tid, const int8_t state, const std::vector<std::string> & titems); 
+    void install(const int32_t tuid, const int64_t tid);
 
-    void abort(const int32_t tuid, const std::vector<int64_t> & version_ptrs);
-
+    void abort(const int32_t tuid);
 };
 

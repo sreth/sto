@@ -256,7 +256,8 @@ bool Transaction::try_commit() {
 
     TransItem* it = nullptr;
     int32_t tuid = TThread::get_tuid();
-    std::unordered_map<int, std::vector<TransItem *>> server_titems_map;
+    std::unordered_map<int, std::vector<TransItem *>> server_write_titems_map;
+    std::unordered_map<int, std::vector<TransItem *>> server_read_titems_map;
     for (unsigned tidx = 0; tidx != tset_size_; ++tidx) {
         it = (tidx % tset_chunk ? it + 1 : tset_[tidx / tset_chunk]);
         if (it->has_write()) {
@@ -277,7 +278,7 @@ bool Transaction::try_commit() {
                 it->__or_flags(TransItem::lock_bit);
             } else {
 		int server = DistSTOServer::obj_reside_on(it->owner());
-                server_titems_map[server].push_back(it);
+                server_write_titems_map[server].push_back(it);
             }
 #endif
         }
@@ -294,9 +295,9 @@ bool Transaction::try_commit() {
     }
 
     // make lock RPC calls to remote servers
-    for (auto server_titems : server_titems_map) {
-        auto server = server_titems.first;
-        auto titems = server_titems.second;
+    for (auto server_write_titems : server_write_titems_map) {
+        auto server = server_write_titems.first;
+        auto titems = server_write_titems.second;
 	std::vector<std::string> str_titems;
 	for (auto titem : titems) {
 	    str_titems.push_back(titem->to_string());
@@ -348,7 +349,6 @@ bool Transaction::try_commit() {
 #endif
 
     //phase2
-    server_titems_map.clear();
     for (unsigned tidx = 0; tidx != tset_size_; ++tidx) {
         it = (tidx % tset_chunk ? it + 1 : tset_[tidx / tset_chunk]);
         if (it->has_read()) {
@@ -363,15 +363,15 @@ bool Transaction::try_commit() {
                 }
             } else {
                 int server = DistSTOServer::obj_reside_on(it->owner());
-                server_titems_map[server].push_back(it);
+                server_read_titems_map[server].push_back(it);
             }
         }
     }
 
     // make check RPC calls to remote servers
-    for (auto server_titems : server_titems_map) {
-        auto server = server_titems.first;
-        auto titems = server_titems.second;
+    for (auto server_read_titems : server_read_titems_map) {
+        auto server = server_read_titems.first;
+        auto titems = server_read_titems.second;
         std::vector<std::string> str_titems;
         std::vector<bool> preceding_duplicate_read_;
         for (auto titem: titems) {
@@ -387,7 +387,6 @@ bool Transaction::try_commit() {
     // fence();
 
     //phase3
-    server_titems_map.clear();
 #if STO_SORT_WRITESET
     // XXX: not supported for distributed
     for (unsigned tidx = first_write_; tidx != tset_size_; ++tidx) {
@@ -409,23 +408,15 @@ bool Transaction::try_commit() {
            // if local then proceed as usual
            if (Sto::server->is_local_obj(it->owner())) {
                it->owner()->install(*it, *this);
-           } else {
-               int server = DistSTOServer::obj_reside_on(it->owner());
-               server_titems_map[server].push_back(it);
            }
         }
     }
 
     // make install RPC calls to remote servers
-    for (auto server_titems : server_titems_map) {
-        auto server = server_titems.first;
-        auto titems = server_titems.second;
-	std::vector<std::string> str_titems;
-	for (auto titem : titems) {
-	    str_titems.push_back(titem->to_string());
-	}
+    for (auto server_write_titems : server_write_titems_map) {
+        auto server = server_write_titems.first;
         // XXX should do this parallel 
-        Sto::clients[server]->install(tuid, commit_tid(), state_, str_titems);
+        Sto::clients[server]->install(tuid, commit_tid_);
     }
 
 #endif

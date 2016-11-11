@@ -116,7 +116,8 @@ public:
         acquire_fence();
     }
     static void unlock(type& v) {
-        assert(is_locked_here(v));
+        // XXX: Distributed STO
+        // assert(is_locked_here(v));
         type new_v = v & ~(lock_bit | threadid_mask);
         release_fence();
         v = new_v;
@@ -160,8 +161,9 @@ public:
         v = new_v;
     }
     static void set_version_unlock(type& v, type new_v) {
-        assert(is_locked_here(v));
-        assert(!is_locked(new_v) || is_locked_here(new_v));
+        // XXX: Distributed STO
+        // assert(is_locked_here(v));
+        // assert(!is_locked(new_v) || is_locked_here(new_v));
         new_v &= ~(lock_bit | threadid_mask);
         release_fence();
         v = new_v;

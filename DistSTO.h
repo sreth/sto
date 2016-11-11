@@ -24,8 +24,8 @@ class DistSTOIf {
   virtual void read(std::string& _return, const int64_t objid) = 0;
   virtual int64_t lock(const int32_t tuid, const std::vector<std::string> & titems) = 0;
   virtual bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) = 0;
-  virtual void install(const int32_t tuid, const int64_t tid, const int8_t state, const std::vector<std::string> & titems) = 0;
-  virtual void abort(const int32_t tuid, const std::vector<int64_t> & unlock_objids) = 0;
+  virtual void install(const int32_t tuid, const int64_t tid) = 0;
+  virtual void abort(const int32_t tuid) = 0;
 };
 
 class DistSTOIfFactory {
@@ -66,10 +66,10 @@ class DistSTONull : virtual public DistSTOIf {
     bool _return = false;
     return _return;
   }
-  void install(const int32_t /* tuid */, const int64_t /* tid */, const int8_t /* state */, const std::vector<std::string> & /* titems */) {
+  void install(const int32_t /* tuid */, const int64_t /* tid */) {
     return;
   }
-  void abort(const int32_t /* tuid */, const std::vector<int64_t> & /* unlock_objids */) {
+  void abort(const int32_t /* tuid */) {
     return;
   }
 };
@@ -415,11 +415,9 @@ class DistSTO_check_presult {
 };
 
 typedef struct _DistSTO_install_args__isset {
-  _DistSTO_install_args__isset() : tuid(false), tid(false), state(false), titems(false) {}
+  _DistSTO_install_args__isset() : tuid(false), tid(false) {}
   bool tuid :1;
   bool tid :1;
-  bool state :1;
-  bool titems :1;
 } _DistSTO_install_args__isset;
 
 class DistSTO_install_args {
@@ -427,14 +425,12 @@ class DistSTO_install_args {
 
   DistSTO_install_args(const DistSTO_install_args&);
   DistSTO_install_args& operator=(const DistSTO_install_args&);
-  DistSTO_install_args() : tuid(0), tid(0), state(0) {
+  DistSTO_install_args() : tuid(0), tid(0) {
   }
 
   virtual ~DistSTO_install_args() throw();
   int32_t tuid;
   int64_t tid;
-  int8_t state;
-  std::vector<std::string>  titems;
 
   _DistSTO_install_args__isset __isset;
 
@@ -442,19 +438,11 @@ class DistSTO_install_args {
 
   void __set_tid(const int64_t val);
 
-  void __set_state(const int8_t val);
-
-  void __set_titems(const std::vector<std::string> & val);
-
   bool operator == (const DistSTO_install_args & rhs) const
   {
     if (!(tuid == rhs.tuid))
       return false;
     if (!(tid == rhs.tid))
-      return false;
-    if (!(state == rhs.state))
-      return false;
-    if (!(titems == rhs.titems))
       return false;
     return true;
   }
@@ -477,8 +465,6 @@ class DistSTO_install_pargs {
   virtual ~DistSTO_install_pargs() throw();
   const int32_t* tuid;
   const int64_t* tid;
-  const int8_t* state;
-  const std::vector<std::string> * titems;
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
@@ -522,9 +508,8 @@ class DistSTO_install_presult {
 };
 
 typedef struct _DistSTO_abort_args__isset {
-  _DistSTO_abort_args__isset() : tuid(false), unlock_objids(false) {}
+  _DistSTO_abort_args__isset() : tuid(false) {}
   bool tuid :1;
-  bool unlock_objids :1;
 } _DistSTO_abort_args__isset;
 
 class DistSTO_abort_args {
@@ -537,19 +522,14 @@ class DistSTO_abort_args {
 
   virtual ~DistSTO_abort_args() throw();
   int32_t tuid;
-  std::vector<int64_t>  unlock_objids;
 
   _DistSTO_abort_args__isset __isset;
 
   void __set_tuid(const int32_t val);
 
-  void __set_unlock_objids(const std::vector<int64_t> & val);
-
   bool operator == (const DistSTO_abort_args & rhs) const
   {
     if (!(tuid == rhs.tuid))
-      return false;
-    if (!(unlock_objids == rhs.unlock_objids))
       return false;
     return true;
   }
@@ -571,7 +551,6 @@ class DistSTO_abort_pargs {
 
   virtual ~DistSTO_abort_pargs() throw();
   const int32_t* tuid;
-  const std::vector<int64_t> * unlock_objids;
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
@@ -648,11 +627,11 @@ class DistSTOClient : virtual public DistSTOIf {
   bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
   void send_check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
   bool recv_check();
-  void install(const int32_t tuid, const int64_t tid, const int8_t state, const std::vector<std::string> & titems);
-  void send_install(const int32_t tuid, const int64_t tid, const int8_t state, const std::vector<std::string> & titems);
+  void install(const int32_t tuid, const int64_t tid);
+  void send_install(const int32_t tuid, const int64_t tid);
   void recv_install();
-  void abort(const int32_t tuid, const std::vector<int64_t> & unlock_objids);
-  void send_abort(const int32_t tuid, const std::vector<int64_t> & unlock_objids);
+  void abort(const int32_t tuid);
+  void send_abort(const int32_t tuid);
   void recv_abort();
  protected:
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot_;
@@ -738,22 +717,22 @@ class DistSTOMultiface : virtual public DistSTOIf {
     return ifaces_[i]->check(tuid, titems, may_duplicate_items_, preceding_duplicate_read_);
   }
 
-  void install(const int32_t tuid, const int64_t tid, const int8_t state, const std::vector<std::string> & titems) {
+  void install(const int32_t tuid, const int64_t tid) {
     size_t sz = ifaces_.size();
     size_t i = 0;
     for (; i < (sz - 1); ++i) {
-      ifaces_[i]->install(tuid, tid, state, titems);
+      ifaces_[i]->install(tuid, tid);
     }
-    ifaces_[i]->install(tuid, tid, state, titems);
+    ifaces_[i]->install(tuid, tid);
   }
 
-  void abort(const int32_t tuid, const std::vector<int64_t> & unlock_objids) {
+  void abort(const int32_t tuid) {
     size_t sz = ifaces_.size();
     size_t i = 0;
     for (; i < (sz - 1); ++i) {
-      ifaces_[i]->abort(tuid, unlock_objids);
+      ifaces_[i]->abort(tuid);
     }
-    ifaces_[i]->abort(tuid, unlock_objids);
+    ifaces_[i]->abort(tuid);
   }
 
 };
@@ -795,11 +774,11 @@ class DistSTOConcurrentClient : virtual public DistSTOIf {
   bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
   int32_t send_check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
   bool recv_check(const int32_t seqid);
-  void install(const int32_t tuid, const int64_t tid, const int8_t state, const std::vector<std::string> & titems);
-  int32_t send_install(const int32_t tuid, const int64_t tid, const int8_t state, const std::vector<std::string> & titems);
+  void install(const int32_t tuid, const int64_t tid);
+  int32_t send_install(const int32_t tuid, const int64_t tid);
   void recv_install(const int32_t seqid);
-  void abort(const int32_t tuid, const std::vector<int64_t> & unlock_objids);
-  int32_t send_abort(const int32_t tuid, const std::vector<int64_t> & unlock_objids);
+  void abort(const int32_t tuid);
+  int32_t send_abort(const int32_t tuid);
   void recv_abort(const int32_t seqid);
  protected:
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> piprot_;

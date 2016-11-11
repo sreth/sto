@@ -69,7 +69,7 @@ ifeq ($(PROFILE),1)
 OPTFLAGS += -g -pg -fno-inline
 endif
 
-PROGRAMS = concurrent singleelems list1 vector pqueue rbtree trans_test ht_mt pqVsIt iterators single predicates ex-counter DistSTOClient $(UNIT_PROGRAMS)
+PROGRAMS = concurrent singleelems list1 vector pqueue rbtree trans_test ht_mt pqVsIt iterators single predicates ex-counter $(UNIT_PROGRAMS)
 UNIT_PROGRAMS = unit-tarray unit-tintpredicate unit-tcounter unit-dist-tcounter unit-tbox unit-dist-tbox unit-tgeneric unit-rcu unit-tvector unit-tvector-nopred
 
 all: $(PROGRAMS)
@@ -194,9 +194,6 @@ diststo-thrift: DistSTO.thrift
 	for f in gen-cpp/*.cpp; do mv "$$f" $$(basename "$${f%.cpp}.cc"); done
 	mv gen-cpp/*.h .
 	rmdir gen-cpp
-
-DistSTOClient: DistSTOClient.o $(STO_DEPS)
-	$(CXX) $(CXXFLAGS) $(OPTFLAGS) -o $@ $< $(STO_OBJS) $(LDFLAGS) $(LIBS)
 
 $(MASSTREE_OBJS): masstree ;
 
