@@ -32,6 +32,7 @@ int64_t DistSTOServer::lock(const int32_t tuid, const std::vector<std::string> &
         titem = (TransItem *) titems[index].data();
         if (!titem->owner()->lock(*titem, txn))
 		goto abort_lock;
+	titem->__or_flags(TransItem::lock_bit);
         index++;
     }
     return 0;
@@ -69,6 +70,8 @@ void DistSTOServer::install(const int32_t tuid, const int64_t tid) {
     for (int i = 0; i < titems.size(); i++) {
         titem = (TransItem *) titems[i].data();
         titem->owner()->install(*titem, txn);
+	if (titem->needs_unlock())
+            titem->owner()->unlock(*titem);
     }
     _tuid_titems.erase(tuid);
 }

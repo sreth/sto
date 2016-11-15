@@ -181,7 +181,7 @@ void Transaction::stop(bool committed, unsigned* writeset, unsigned nwriteset) {
                 it = &tset0_[*idxit];
             else
                 it = &tset_[*idxit / tset_chunk][*idxit % tset_chunk];
-            if (it->needs_unlock())
+            if (it->needs_unlock() && Sto::server->is_local_obj(it->owner()))
                 it->owner()->unlock(*it);
         }
         for (unsigned* idxit = writeset + nwriteset; idxit != writeset; ) {
@@ -198,7 +198,7 @@ void Transaction::stop(bool committed, unsigned* writeset, unsigned nwriteset) {
             it = &tset_[tset_size_ / tset_chunk][tset_size_ % tset_chunk];
             for (unsigned tidx = tset_size_; tidx != first_write_; --tidx) {
                 it = (tidx % tset_chunk ? it - 1 : &tset_[(tidx - 1) / tset_chunk][tset_chunk - 1]);
-                if (it->needs_unlock())
+                if (it->needs_unlock() && Sto::server->is_local_obj(it->owner()))
                     it->owner()->unlock(*it);
             }
         }
@@ -313,10 +313,6 @@ bool Transaction::try_commit() {
             }
             goto abort;
         }
-
-        // successfull lock modified objects so mark their lock bits
-        for (auto titem: titems)
-            titem->__or_flags(TransItem::lock_bit);
     }
 
     first_write_ = writeset[0];

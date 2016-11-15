@@ -205,6 +205,7 @@ private:
     }
     friend class Transaction;
     friend class TransProxy;
+    friend class DistSTOServer;
 };
 
 
