@@ -42,6 +42,7 @@ abort_lock:
         index--;
         titem = (TransItem *) titems[index].data();
         titem->owner()->unlock(*titem);
+        titem->owner()->cleanup(*titem, false);
     }
     _tuid_titems.erase(tuid);
     return -1;
@@ -72,6 +73,7 @@ void DistSTOServer::install(const int32_t tuid, const int64_t tid) {
         titem->owner()->install(*titem, txn);
 	if (titem->needs_unlock())
             titem->owner()->unlock(*titem);
+        titem->owner()->cleanup(*titem, true);
     }
     _tuid_titems.erase(tuid);
 }
@@ -83,6 +85,7 @@ void DistSTOServer::abort(const int32_t tuid) {
     for (int i = 0; i < titems.size(); i++) {
         titem = (TransItem *) titems[i].data();
         titem->owner()->unlock(*titem);
+        titem->owner()->cleanup(*titem, false);
     }
     _tuid_titems.erase(tuid);
 }
