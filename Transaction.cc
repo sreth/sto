@@ -190,7 +190,7 @@ void Transaction::stop(bool committed, unsigned* writeset, unsigned nwriteset) {
                 it = &tset0_[*idxit];
             else
                 it = &tset_[*idxit / tset_chunk][*idxit % tset_chunk];
-            if (it->has_write()) // always true unless a user turns it off in install()/check()
+            if (it->has_write() && Sto::server->is_local_obj(it->owner())) // always true unless a user turns it off in install()/check()
                 it->owner()->cleanup(*it, committed);
         }
     } else {
@@ -205,7 +205,7 @@ void Transaction::stop(bool committed, unsigned* writeset, unsigned nwriteset) {
         it = &tset_[tset_size_ / tset_chunk][tset_size_ % tset_chunk];
         for (unsigned tidx = tset_size_; tidx != first_write_; --tidx) {
             it = (tidx % tset_chunk ? it - 1 : &tset_[(tidx - 1) / tset_chunk][tset_chunk - 1]);
-            if (it->has_write())
+            if (it->has_write() && Sto::server->is_local_obj(it->owner()))
                 it->owner()->cleanup(*it, committed);
         }
     }
