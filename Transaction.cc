@@ -360,11 +360,7 @@ bool Transaction::try_commit() {
                 if (!it->owner()->check(*it, *this)
                     && (!may_duplicate_items_ || !preceding_duplicate_read(it))) {
                     mark_abort_because(it, "commit check");
-                    for (auto server_write_titems : server_write_titems_map) {
-                        auto server = server_write_titems.first;
-                        Sto::clients[server]->abort(tuid);
-                    } 
-                    goto abort;
+                    goto abort_remote;
                 }
             } else {
                 int server = DistSTOServer::obj_reside_on(it->owner());
@@ -386,11 +382,7 @@ bool Transaction::try_commit() {
 
         // XXX: should do this parallel 
         if (!Sto::clients[server]->check(tuid, str_titems, may_duplicate_items_, preceding_duplicate_read_)) {
-            for (auto server_write_titems : server_write_titems_map) {
-                auto server = server_write_titems.first;
-                Sto::clients[server]->abort(tuid);
-            } 
-            goto abort;
+            goto abort_remote;
         }
     }
     // fence();
@@ -433,6 +425,12 @@ bool Transaction::try_commit() {
     // fence();
     stop(true, writeset, nwriteset);
     return true;
+
+abort_remote:
+    for (auto server_write_titems : server_write_titems_map) {
+        auto server = server_write_titems.first;
+        Sto::clients[server]->abort(tuid);
+    } 
 
 abort:
     // fence();

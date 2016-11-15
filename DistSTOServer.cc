@@ -48,7 +48,7 @@ abort_lock:
     return -1;
 }
 
-// Used to check if versions of read object have changed 
+// Used to check if read objects have been modified
 bool DistSTOServer::check(const int32_t tuid, const std::vector<std::string> & titems, 
                           const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) {
     TransItem *titem;
@@ -63,6 +63,7 @@ bool DistSTOServer::check(const int32_t tuid, const std::vector<std::string> & t
     return true;
 }
 
+// Used to update modified objects
 void DistSTOServer::install(const int32_t tuid, const int64_t tid) { 
     TransItem *titem;
     assert(_tuid_titems.find(tuid) != _tuid_titems.end());
@@ -78,6 +79,7 @@ void DistSTOServer::install(const int32_t tuid, const int64_t tid) {
     _tuid_titems.erase(tuid);
 }
 
+// Used to abort a transaction by unlocking modified objects and do some cleanup
 void DistSTOServer::abort(const int32_t tuid) {
     TransItem *titem;
     assert(_tuid_titems.find(tuid) != _tuid_titems.end());
