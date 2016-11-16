@@ -582,6 +582,9 @@ public:
     virtual void cleanup(TransItem& item, bool committed) {
         (void) item, (void) committed;
     }
+    virtual void do_rpc(std::string &_return, int64_t op, const std::vector<std::string> &opargs) {
+        (void) _return, (void) op, (void) opargs;
+    }
     virtual void print(std::ostream& w, const TransItem& item) const;
 };
 
