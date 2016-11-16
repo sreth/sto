@@ -5,17 +5,9 @@
 
 typedef DistTBox<int64_t> box_type;
 
-void DistSTOServer::read(std::string& _return, const int64_t objid) {
-/*
-    // initial hack to avoid dealing with objids - assume it is a pointer to a TObject with type int64_t
-    // eventually will need some sort of dynamic dispatch here
-    box_type &tbox = *((box_type *) objid);
-    _return.resize(sizeof(TransactionTid::type) + sizeof(box_type::read_type));
-    TransactionTid::type version = 0;
-    int64_t val = tbox.nontrans_read(&version);
-    memcpy((void *) _return.data(), (void *) &version, sizeof(TransactionTid::type));
-    memcpy((void *) _return.data() + sizeof(TransactionTid::type), (void *) &val, sizeof(box_type::read_type));
-*/
+void DistSTOServer::do_rpc(std::string& _return, const int64_t objid, const int64_t op, const std::vector<std::string> &opargs) {
+    TObject &obj = *((TObject *) objid);
+    obj.do_rpc(_return, op, opargs);
 }
 
 #define dprintf(...) printf(__VA_ARGS__)

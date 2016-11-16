@@ -17,25 +17,59 @@ public:
         : v_(std::forward<Args>(args)...) {
     }
 
-    read_type read(TransactionTid::type *version = nullptr) const {
+    static const int READ_OP = 0;
+
+    void do_rpc(std::string &_return, int64_t op, const std::vector<std::string> &opargs) {
+        switch(op) {
+        case READ_OP:
+            {
+                // arguments: none
+                // return:
+                // first sizeof(version_type) bytes are version
+                // next sizeof(read_type) bytes are data
+                // data is only valid if the version is unlocked
+
+                // allocate space in return buffer
+                _return.resize(sizeof(version_type) + sizeof(T));
+                version_type &ver = *(version_type *) _return.data();
+                T &obj = *(T *) (_return.data() + sizeof(version_type));
+
+                // TODO: we need to change TWrapped / TransProxy to not use a transaction,
+                // so that we can use the usual read() method instead of this loop
+                while (1) {
+                    version_type v = vers_;
+                    fence();
+                    obj = v_.access();
+                    fence();
+                    ver = vers_;
+                    if (v == ver || ver.is_locked()) {
+                        break;
+                    }
+                    relax_fence();
+                }
+
+                break;
+            }
+        }
+    }
+
+    read_type read() const {
         auto item = Sto::item(this, 0);
         if (item.has_write()) {
             return item.template write_value<T>();
-        } else {
-            //if (Sto::server->is_local_obj(this)) {
+        } else if (Sto::server->is_local_obj(this)) {
                 return v_.read(item, vers_);
-/*
-            } else {
-                std::string buf;
-                Sto::clients[Sto::server->obj_reside_on(this)]->read(buf, (int64_t) this);
-                TransactionTid::type v = *(TransactionTid::type *) buf.data();
-                if (version != nullptr)
-                    *version = v;
-                Sto::item(this, 0).add_read(v);
-                return *(T *) (buf.data() + sizeof(TransactionTid::type));
-            }
-*/  
-      }
+        } else {
+            std::string buf;
+            std::vector<std::string> args;
+            int server = Sto::server->obj_reside_on(this);
+            Sto::clients[server]->do_rpc(buf, (int64_t) this, READ_OP, args);
+
+            version_type &ver = *(version_type *) buf.data();
+            item.add_read(ver);
+            read_type &obj = *(T *) (buf.data() + sizeof(version_type));
+            return obj;
+        }
     }
 
     void write(const T& x) {
