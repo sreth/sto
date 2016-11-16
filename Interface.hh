@@ -585,6 +585,13 @@ public:
     virtual void do_rpc(std::string &_return, int64_t op, const std::vector<std::string> &opargs) {
         (void) _return, (void) op, (void) opargs;
     }
+    virtual std::string get_write_value(TransItem& item) {
+        (void) item;
+        return std::string();
+    }
+    virtual void set_write_value(TransItem& item, std::string write_value) {
+        (void) item;
+    }
     virtual void print(std::ostream& w, const TransItem& item) const;
 };
 

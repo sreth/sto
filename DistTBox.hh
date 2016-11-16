@@ -60,6 +60,8 @@ public:
         } else if (Sto::server->is_local_obj(this)) {
                 return v_.read(item, vers_);
         } else {
+		return v_.read(item, vers_);
+	/*
             std::string buf;
             std::vector<std::string> args;
             int server = Sto::server->obj_reside_on(this);
@@ -69,6 +71,7 @@ public:
             item.add_read(ver);
             read_type &obj = *(T *) (buf.data() + sizeof(version_type));
             return obj;
+	*/
         }
     }
 

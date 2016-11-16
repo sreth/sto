@@ -73,7 +73,7 @@ public:
     bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, 
                const std::vector<bool> & preceding_duplicate_read_);
 
-    void install(const int32_t tuid, const int64_t tid);
+    void install(const int32_t tuid, const int64_t tid, const std::vector<std::string> & write_values);
 
     void abort(const int32_t tuid);
 };

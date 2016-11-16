@@ -416,8 +416,13 @@ bool Transaction::try_commit() {
     // make install RPC calls to remote servers
     for (auto server_write_titems : server_write_titems_map) {
         auto server = server_write_titems.first;
+        auto titems = server_write_titems.second;
+        std::vector<std::string> write_values;
+        for (auto titem: titems) {
+            write_values.push_back(titem->owner()->get_write_value(*titem));
+        }
         // XXX should do this parallel 
-        Sto::clients[server]->install(tuid, commit_tid_);
+        Sto::clients[server]->install(tuid, commit_tid_, write_values);
     }
 
 #endif
