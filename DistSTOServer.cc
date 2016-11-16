@@ -25,7 +25,6 @@ void DistSTOServer::read(std::string& _return, const int64_t objid) {
 int64_t DistSTOServer::lock(const int32_t tuid, const std::vector<std::string> & titems) {
     TransItem *titem;
     assert(_tuid_titems.find(tuid) == _tuid_titems.end());
-    _tuid_titems[tuid] = titems;
     Transaction txn = Transaction(tuid);
     int index = 0;
     while (index < titems.size()) {
@@ -35,6 +34,7 @@ int64_t DistSTOServer::lock(const int32_t tuid, const std::vector<std::string> &
 	titem->__or_flags(TransItem::lock_bit);
         index++;
     }
+    _tuid_titems[tuid] = std::move(titems);
     return 0;
 
 abort_lock:

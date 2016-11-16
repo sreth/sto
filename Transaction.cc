@@ -300,7 +300,7 @@ bool Transaction::try_commit() {
         auto titems = iter->second;
 	std::vector<std::string> str_titems;
 	for (auto titem : titems) {
-	    str_titems.push_back(titem->to_string());
+	    str_titems.push_back(std::move(titem->to_string()));
 	} 
 
         // XXX should do this parallel 
@@ -376,7 +376,7 @@ bool Transaction::try_commit() {
         std::vector<std::string> str_titems;
         std::vector<bool> preceding_duplicate_read_;
         for (auto titem: titems) {
-            str_titems.push_back(titem->to_string());
+            str_titems.push_back(std::move(titem->to_string()));
             preceding_duplicate_read_.push_back(preceding_duplicate_read(titem));
         }
 
