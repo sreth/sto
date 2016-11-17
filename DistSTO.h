@@ -21,7 +21,6 @@
 class DistSTOIf {
  public:
   virtual ~DistSTOIf() {}
-  virtual void do_rpc(std::string& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs) = 0;
   virtual int64_t lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) = 0;
   virtual bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) = 0;
   virtual void install(const int32_t tuid, const int64_t tid, const std::vector<std::string> & write_values) = 0;
@@ -55,9 +54,6 @@ class DistSTOIfSingletonFactory : virtual public DistSTOIfFactory {
 class DistSTONull : virtual public DistSTOIf {
  public:
   virtual ~DistSTONull() {}
-  void do_rpc(std::string& /* _return */, const int64_t /* objid */, const int64_t /* op */, const std::vector<std::string> & /* opargs */) {
-    return;
-  }
   int64_t lock(const int32_t /* tuid */, const std::vector<std::string> & /* titems */, const bool /* may_duplicate_items_ */, const std::vector<bool> & /* preceding_duplicate_read_ */) {
     int64_t _return = 0;
     return _return;
@@ -72,124 +68,6 @@ class DistSTONull : virtual public DistSTOIf {
   void abort(const int32_t /* tuid */) {
     return;
   }
-};
-
-typedef struct _DistSTO_do_rpc_args__isset {
-  _DistSTO_do_rpc_args__isset() : objid(false), op(false), opargs(false) {}
-  bool objid :1;
-  bool op :1;
-  bool opargs :1;
-} _DistSTO_do_rpc_args__isset;
-
-class DistSTO_do_rpc_args {
- public:
-
-  DistSTO_do_rpc_args(const DistSTO_do_rpc_args&);
-  DistSTO_do_rpc_args& operator=(const DistSTO_do_rpc_args&);
-  DistSTO_do_rpc_args() : objid(0), op(0) {
-  }
-
-  virtual ~DistSTO_do_rpc_args() throw();
-  int64_t objid;
-  int64_t op;
-  std::vector<std::string>  opargs;
-
-  _DistSTO_do_rpc_args__isset __isset;
-
-  void __set_objid(const int64_t val);
-
-  void __set_op(const int64_t val);
-
-  void __set_opargs(const std::vector<std::string> & val);
-
-  bool operator == (const DistSTO_do_rpc_args & rhs) const
-  {
-    if (!(objid == rhs.objid))
-      return false;
-    if (!(op == rhs.op))
-      return false;
-    if (!(opargs == rhs.opargs))
-      return false;
-    return true;
-  }
-  bool operator != (const DistSTO_do_rpc_args &rhs) const {
-    return !(*this == rhs);
-  }
-
-  bool operator < (const DistSTO_do_rpc_args & ) const;
-
-  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
-  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
-
-};
-
-
-class DistSTO_do_rpc_pargs {
- public:
-
-
-  virtual ~DistSTO_do_rpc_pargs() throw();
-  const int64_t* objid;
-  const int64_t* op;
-  const std::vector<std::string> * opargs;
-
-  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
-
-};
-
-typedef struct _DistSTO_do_rpc_result__isset {
-  _DistSTO_do_rpc_result__isset() : success(false) {}
-  bool success :1;
-} _DistSTO_do_rpc_result__isset;
-
-class DistSTO_do_rpc_result {
- public:
-
-  DistSTO_do_rpc_result(const DistSTO_do_rpc_result&);
-  DistSTO_do_rpc_result& operator=(const DistSTO_do_rpc_result&);
-  DistSTO_do_rpc_result() : success() {
-  }
-
-  virtual ~DistSTO_do_rpc_result() throw();
-  std::string success;
-
-  _DistSTO_do_rpc_result__isset __isset;
-
-  void __set_success(const std::string& val);
-
-  bool operator == (const DistSTO_do_rpc_result & rhs) const
-  {
-    if (!(success == rhs.success))
-      return false;
-    return true;
-  }
-  bool operator != (const DistSTO_do_rpc_result &rhs) const {
-    return !(*this == rhs);
-  }
-
-  bool operator < (const DistSTO_do_rpc_result & ) const;
-
-  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
-  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
-
-};
-
-typedef struct _DistSTO_do_rpc_presult__isset {
-  _DistSTO_do_rpc_presult__isset() : success(false) {}
-  bool success :1;
-} _DistSTO_do_rpc_presult__isset;
-
-class DistSTO_do_rpc_presult {
- public:
-
-
-  virtual ~DistSTO_do_rpc_presult() throw();
-  std::string* success;
-
-  _DistSTO_do_rpc_presult__isset __isset;
-
-  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
-
 };
 
 typedef struct _DistSTO_lock_args__isset {
@@ -653,9 +531,6 @@ class DistSTOClient : virtual public DistSTOIf {
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> getOutputProtocol() {
     return poprot_;
   }
-  void do_rpc(std::string& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
-  void send_do_rpc(const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
-  void recv_do_rpc(std::string& _return);
   int64_t lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
   void send_lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
   int64_t recv_lock();
@@ -683,7 +558,6 @@ class DistSTOProcessor : public ::apache::thrift::TDispatchProcessor {
   typedef  void (DistSTOProcessor::*ProcessFunction)(int32_t, ::apache::thrift::protocol::TProtocol*, ::apache::thrift::protocol::TProtocol*, void*);
   typedef std::map<std::string, ProcessFunction> ProcessMap;
   ProcessMap processMap_;
-  void process_do_rpc(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_lock(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_check(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_install(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
@@ -691,7 +565,6 @@ class DistSTOProcessor : public ::apache::thrift::TDispatchProcessor {
  public:
   DistSTOProcessor(boost::shared_ptr<DistSTOIf> iface) :
     iface_(iface) {
-    processMap_["do_rpc"] = &DistSTOProcessor::process_do_rpc;
     processMap_["lock"] = &DistSTOProcessor::process_lock;
     processMap_["check"] = &DistSTOProcessor::process_check;
     processMap_["install"] = &DistSTOProcessor::process_install;
@@ -724,16 +597,6 @@ class DistSTOMultiface : virtual public DistSTOIf {
     ifaces_.push_back(iface);
   }
  public:
-  void do_rpc(std::string& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs) {
-    size_t sz = ifaces_.size();
-    size_t i = 0;
-    for (; i < (sz - 1); ++i) {
-      ifaces_[i]->do_rpc(_return, objid, op, opargs);
-    }
-    ifaces_[i]->do_rpc(_return, objid, op, opargs);
-    return;
-  }
-
   int64_t lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) {
     size_t sz = ifaces_.size();
     size_t i = 0;
@@ -800,9 +663,6 @@ class DistSTOConcurrentClient : virtual public DistSTOIf {
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> getOutputProtocol() {
     return poprot_;
   }
-  void do_rpc(std::string& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
-  int32_t send_do_rpc(const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
-  void recv_do_rpc(std::string& _return, const int32_t seqid);
   int64_t lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
   int32_t send_lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
   int64_t recv_lock(const int32_t seqid);

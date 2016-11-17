@@ -14,6 +14,7 @@
 #include <sstream>
 
 #include "DistSTO.h"
+#include "RPC.h"
 #include <unordered_map>
 
 #ifndef STO_PROFILE_COUNTERS
@@ -673,6 +674,7 @@ private:
 };
 
 class DistSTOServer;
+class DistSTORPCHandler;
 
 class Sto {
   
@@ -680,14 +682,18 @@ public:
 
 /******************** Start of Distributed STO ********************/ 
 
-    // server that handles all incoming RPCs
+    // server that handles all incoming 2pc requests
     static DistSTOServer *server;
+
+    // handler that handles all incoming rpcs
+    static DistSTORPCHandler *rpc_handler;
 
     // total number of servers in the network
     static int total_servers;
 
     // a client for each peer that this server talks to
     static std::vector<DistSTOClient*> clients;
+    static std::vector<RPCClient*> rpc_clients;
 
     // this is called once to initialize the system
     static void initialize_dist_sto(int this_server_id, int total_servers);

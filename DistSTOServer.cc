@@ -1,14 +1,6 @@
 #include "DistSTOServer.hh"
-#include "DistTBox.hh"
 
 #include <cassert>
-
-typedef DistTBox<int64_t> box_type;
-
-void DistSTOServer::do_rpc(std::string& _return, const int64_t objid, const int64_t op, const std::vector<std::string> &opargs) {
-    TObject &obj = *((TObject *) objid);
-    obj.do_rpc(_return, op, opargs);
-}
 
 #define dprintf(...) printf(__VA_ARGS__)
 // #define dprintf(format, ...)
@@ -16,7 +8,6 @@ void DistSTOServer::do_rpc(std::string& _return, const int64_t objid, const int6
 // Phase 1
 // Used to lock modified objects. If the objects are also read, perform checking (phase 2) as well.
 // Return server version if success otherwise a negative value.
-
 int64_t DistSTOServer::lock(const int32_t tuid, const std::vector<std::string> & titems, 
                             const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) {
     TransItem *titem;
@@ -69,6 +60,7 @@ bool DistSTOServer::check(const int32_t tuid, const std::vector<std::string> & t
     Transaction txn = Transaction(tuid);
     for (int i = 0; i < titems.size(); i++) {
         titem = (TransItem *) titems[i].data();
+	assert(!titem->has_write());
         if (!titem->owner()->check(*titem, txn)
             && (!may_duplicate_items_ || !preceding_duplicate_read_[i])) {
             return false;
