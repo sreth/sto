@@ -1,5 +1,6 @@
 #pragma once
 #include "DistSTOServer.hh"
+#include "DistSTORPCHandler.hh"
 #include "Interface.hh"
 #include "TWrapped.hh"
 

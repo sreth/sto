@@ -579,8 +579,8 @@ void Sto::initialize_dist_sto(int server_id, int total_servers) {
         Sto::clients.push_back(new DistSTOClient(protocol1));
 
         boost::shared_ptr<TSocket> socket2(new TSocket("localhost", 49153));
-        boost::shared_ptr<TTransport> transport2(new TBufferedTransport(socket1));
-        boost::shared_ptr<TProtocol> protocol2(new TBinaryProtocol(transport1));
+        boost::shared_ptr<TTransport> transport2(new TBufferedTransport(socket2));
+        boost::shared_ptr<TProtocol> protocol2(new TBinaryProtocol(transport2));
         Sto::rpc_clients.push_back(new RPCClient(protocol2));
     
         transport1->open();
