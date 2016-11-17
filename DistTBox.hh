@@ -144,8 +144,8 @@ public:
         return txn.try_lock(item, vers_);
     }
 
-    bool check(TransItem& item, Transaction&) override {
-        return item.check_version(vers_);
+    bool check(TransItem& item, Transaction& txn) override {
+        return item.check_version(vers_, txn.threadid());
     }
 
     void install(TransItem& item, Transaction& txn) override {

@@ -13,7 +13,8 @@ void DistSTOServer::do_rpc(std::string& _return, const int64_t objid, const int6
 #define dprintf(...) printf(__VA_ARGS__)
 // #define dprintf(format, ...)
 
-// Used to lock modified objects. Return server version if success otherwise a negative value
+// Phase 1
+// Used to lock modified objects. Return server version if success otherwise a negative value.
 int64_t DistSTOServer::lock(const int32_t tuid, const std::vector<std::string> & titems) {
     TransItem *titem;
     assert(_tuid_titems.find(tuid) == _tuid_titems.end());
@@ -40,7 +41,8 @@ abort_lock:
     return -1;
 }
 
-// Used to check if read objects have been modified
+// Phase 2
+// Used to check if read objects have been modified.
 bool DistSTOServer::check(const int32_t tuid, const std::vector<std::string> & titems, 
                           const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) {
     TransItem *titem;
@@ -55,6 +57,7 @@ bool DistSTOServer::check(const int32_t tuid, const std::vector<std::string> & t
     return true;
 }
 
+// Phase 3
 // Used to update modified objects
 void DistSTOServer::install(const int32_t tuid, const int64_t tid, const std::vector<std::string> & write_values) {
     TransItem *titem;

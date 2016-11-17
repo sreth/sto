@@ -79,13 +79,13 @@ class TransItem {
         assert(has_read());
         return Packer<T>::unpack(rdata_);
     }
-    bool check_version(TVersion v) const {
+    bool check_version(TVersion v, int here = TThread::id()) const {
         assert(has_read());
-        return v.check_version(this->read_value<TVersion>());
+        return v.check_version(this->read_value<TVersion>(), here);
     }
-    bool check_version(TNonopaqueVersion v) const {
+    bool check_version(TNonopaqueVersion v, int here = TThread::id()) const {
         assert(has_read());
-        return v.check_version(this->read_value<TNonopaqueVersion>());
+        return v.check_version(this->read_value<TNonopaqueVersion>(), here);
     }
 
     template <typename T>

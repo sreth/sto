@@ -582,6 +582,8 @@ public:
     virtual void cleanup(TransItem& item, bool committed) {
         (void) item, (void) committed;
     }
+
+    // Distributed STO
     virtual void do_rpc(std::string &_return, int64_t op, const std::vector<std::string> &opargs) {
         (void) _return, (void) op, (void) opargs;
     }
