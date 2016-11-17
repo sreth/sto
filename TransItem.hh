@@ -213,7 +213,8 @@ class TransProxy {
   public:
     TransProxy(Transaction& t, TransItem& item)
         : t_(&t), item_(&item) {
-        assert(&t == TThread::txn);
+        // XXX: removed for distributed STO since we might want multiple txns per thread
+        // assert(&t == TThread::txn);
     }
 
     TransProxy* operator->() { // make OptionalTransProxy work

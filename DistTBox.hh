@@ -58,10 +58,8 @@ public:
         if (item.has_write()) {
             return item.template write_value<T>();
         } else if (Sto::server->is_local_obj(this)) {
-                return v_.read(item, vers_);
+            return v_.read(item, vers_);
         } else {
-		return v_.read(item, vers_);
-	/*
             std::string buf;
             std::vector<std::string> args;
             int server = Sto::server->obj_reside_on(this);
@@ -71,8 +69,20 @@ public:
             item.add_read(ver);
             read_type &obj = *(T *) (buf.data() + sizeof(version_type));
             return obj;
-	*/
         }
+    }
+
+    std::string get_write_value(TransItem& item) {
+        std::string buf;
+        buf.resize(sizeof(T));
+        *(T*) buf.data() = std::move(item.write_value<T>());
+        return buf;
+    }
+
+    void set_write_value(TransItem& item, Transaction& txn, std::string write_value) {
+        const T &val = *(T*) write_value.data();
+        TransProxy it(txn, item);
+        it.template add_write<T>(val);
     }
 
     void write(const T& x) {
