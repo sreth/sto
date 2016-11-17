@@ -22,7 +22,7 @@ class DistSTOIf {
  public:
   virtual ~DistSTOIf() {}
   virtual void do_rpc(std::string& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs) = 0;
-  virtual int64_t lock(const int32_t tuid, const std::vector<std::string> & titems) = 0;
+  virtual int64_t lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) = 0;
   virtual bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) = 0;
   virtual void install(const int32_t tuid, const int64_t tid, const std::vector<std::string> & write_values) = 0;
   virtual void abort(const int32_t tuid) = 0;
@@ -58,7 +58,7 @@ class DistSTONull : virtual public DistSTOIf {
   void do_rpc(std::string& /* _return */, const int64_t /* objid */, const int64_t /* op */, const std::vector<std::string> & /* opargs */) {
     return;
   }
-  int64_t lock(const int32_t /* tuid */, const std::vector<std::string> & /* titems */) {
+  int64_t lock(const int32_t /* tuid */, const std::vector<std::string> & /* titems */, const bool /* may_duplicate_items_ */, const std::vector<bool> & /* preceding_duplicate_read_ */) {
     int64_t _return = 0;
     return _return;
   }
@@ -193,9 +193,11 @@ class DistSTO_do_rpc_presult {
 };
 
 typedef struct _DistSTO_lock_args__isset {
-  _DistSTO_lock_args__isset() : tuid(false), titems(false) {}
+  _DistSTO_lock_args__isset() : tuid(false), titems(false), may_duplicate_items_(false), preceding_duplicate_read_(false) {}
   bool tuid :1;
   bool titems :1;
+  bool may_duplicate_items_ :1;
+  bool preceding_duplicate_read_ :1;
 } _DistSTO_lock_args__isset;
 
 class DistSTO_lock_args {
@@ -203,12 +205,14 @@ class DistSTO_lock_args {
 
   DistSTO_lock_args(const DistSTO_lock_args&);
   DistSTO_lock_args& operator=(const DistSTO_lock_args&);
-  DistSTO_lock_args() : tuid(0) {
+  DistSTO_lock_args() : tuid(0), may_duplicate_items_(0) {
   }
 
   virtual ~DistSTO_lock_args() throw();
   int32_t tuid;
   std::vector<std::string>  titems;
+  bool may_duplicate_items_;
+  std::vector<bool>  preceding_duplicate_read_;
 
   _DistSTO_lock_args__isset __isset;
 
@@ -216,11 +220,19 @@ class DistSTO_lock_args {
 
   void __set_titems(const std::vector<std::string> & val);
 
+  void __set_may_duplicate_items_(const bool val);
+
+  void __set_preceding_duplicate_read_(const std::vector<bool> & val);
+
   bool operator == (const DistSTO_lock_args & rhs) const
   {
     if (!(tuid == rhs.tuid))
       return false;
     if (!(titems == rhs.titems))
+      return false;
+    if (!(may_duplicate_items_ == rhs.may_duplicate_items_))
+      return false;
+    if (!(preceding_duplicate_read_ == rhs.preceding_duplicate_read_))
       return false;
     return true;
   }
@@ -243,6 +255,8 @@ class DistSTO_lock_pargs {
   virtual ~DistSTO_lock_pargs() throw();
   const int32_t* tuid;
   const std::vector<std::string> * titems;
+  const bool* may_duplicate_items_;
+  const std::vector<bool> * preceding_duplicate_read_;
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
@@ -642,8 +656,8 @@ class DistSTOClient : virtual public DistSTOIf {
   void do_rpc(std::string& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
   void send_do_rpc(const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
   void recv_do_rpc(std::string& _return);
-  int64_t lock(const int32_t tuid, const std::vector<std::string> & titems);
-  void send_lock(const int32_t tuid, const std::vector<std::string> & titems);
+  int64_t lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
+  void send_lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
   int64_t recv_lock();
   bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
   void send_check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
@@ -720,13 +734,13 @@ class DistSTOMultiface : virtual public DistSTOIf {
     return;
   }
 
-  int64_t lock(const int32_t tuid, const std::vector<std::string> & titems) {
+  int64_t lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) {
     size_t sz = ifaces_.size();
     size_t i = 0;
     for (; i < (sz - 1); ++i) {
-      ifaces_[i]->lock(tuid, titems);
+      ifaces_[i]->lock(tuid, titems, may_duplicate_items_, preceding_duplicate_read_);
     }
-    return ifaces_[i]->lock(tuid, titems);
+    return ifaces_[i]->lock(tuid, titems, may_duplicate_items_, preceding_duplicate_read_);
   }
 
   bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) {
@@ -789,8 +803,8 @@ class DistSTOConcurrentClient : virtual public DistSTOIf {
   void do_rpc(std::string& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
   int32_t send_do_rpc(const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
   void recv_do_rpc(std::string& _return, const int32_t seqid);
-  int64_t lock(const int32_t tuid, const std::vector<std::string> & titems);
-  int32_t send_lock(const int32_t tuid, const std::vector<std::string> & titems);
+  int64_t lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
+  int32_t send_lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
   int64_t recv_lock(const int32_t seqid);
   bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
   int32_t send_check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);

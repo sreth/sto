@@ -14,20 +14,40 @@ void DistSTOServer::do_rpc(std::string& _return, const int64_t objid, const int6
 // #define dprintf(format, ...)
 
 // Phase 1
-// Used to lock modified objects. Return server version if success otherwise a negative value.
-int64_t DistSTOServer::lock(const int32_t tuid, const std::vector<std::string> & titems) {
+// Used to lock modified objects. If the objects are also read, perform checking (phase 2) as well.
+// Return server version if success otherwise a negative value.
+
+int64_t DistSTOServer::lock(const int32_t tuid, const std::vector<std::string> & titems, 
+                            const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) {
     TransItem *titem;
     assert(_tuid_titems.find(tuid) == _tuid_titems.end());
     Transaction txn = Transaction(tuid);
+    int rindex = 0; // index for preceding_duplicate_read_
     int index = 0;
     while (index < titems.size()) {
         titem = (TransItem *) titems[index].data();
+	// perform phase 1 for write objects
         if (!titem->owner()->lock(*titem, txn))
 		goto abort_lock;
 	titem->__or_flags(TransItem::lock_bit);
+	// perform phase 2 for read-write objects
+	if (titem->has_read()) {
+            assert(rindex < preceding_duplicate_read_.size());
+            if (!titem->owner()->check(*titem, txn)
+                && (!may_duplicate_items_ || !preceding_duplicate_read_[rindex])) {
+	        titem->owner()->unlock(*titem);
+                titem->owner()->cleanup(*titem, false);
+                goto abort_lock;
+	    } else {
+                rindex++;
+            }
+        }
         index++;
     }
+    assert(rindex == preceding_duplicate_read_.size());
     _tuid_titems[tuid] = std::move(titems);
+
+    // TODO:: return server version 
     return 0;
 
 abort_lock:
@@ -42,7 +62,7 @@ abort_lock:
 }
 
 // Phase 2
-// Used to check if read objects have been modified.
+// Used to check if read-only objects have been modified.
 bool DistSTOServer::check(const int32_t tuid, const std::vector<std::string> & titems, 
                           const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) {
     TransItem *titem;

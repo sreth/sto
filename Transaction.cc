@@ -299,12 +299,15 @@ bool Transaction::try_commit() {
         auto server = iter->first;
         auto titems = iter->second;
 	std::vector<std::string> str_titems;
+        std::vector<bool> preceding_duplicate_read_;
 	for (auto titem : titems) {
 	    str_titems.push_back(std::move(titem->to_string()));
+            if (titem->has_read())
+                preceding_duplicate_read_.push_back(preceding_duplicate_read(titem));
 	} 
 
         // XXX should do this parallel 
-        if (Sto::clients[server]->lock(tuid, str_titems) < 0) {
+        if (Sto::clients[server]->lock(tuid, str_titems, may_duplicate_items_, preceding_duplicate_read_) < 0) {
             for (auto iter2 = server_write_titems_map.begin();
                       iter2 != iter;
                       ++iter2) {
@@ -362,7 +365,8 @@ bool Transaction::try_commit() {
                     mark_abort_because(it, "commit check");
                     goto abort_remote;
                 }
-            } else {
+            } else if (!it->has_write()) {
+                // collect only read-only objects
                 int server = DistSTOServer::obj_reside_on(it->owner());
                 server_read_titems_map[server].push_back(it);
             }
