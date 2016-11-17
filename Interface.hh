@@ -588,10 +588,9 @@ public:
         (void) _return, (void) op, (void) opargs;
     }
     virtual std::string get_write_value(TransItem& item) {
-        (void) item;
         return std::string();
     }
-    virtual void set_write_value(TransItem& item, std::string write_value) {
+    virtual void set_write_value(TransItem& item, Transaction& txn, std::string write_value) {
         (void) item;
     }
     virtual void print(std::ostream& w, const TransItem& item) const;

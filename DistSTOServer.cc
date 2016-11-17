@@ -78,7 +78,7 @@ void DistSTOServer::install(const int32_t tuid, const int64_t tid, const std::ve
     Transaction txn = Transaction(tuid, tid);
     for (int i = 0; i < titems.size(); i++) {
         titem = (TransItem *) titems[i].data();
-        titem->owner()->set_write_value(*titem, write_values[i]);
+        titem->owner()->set_write_value(*titem, txn, write_values[i]);
         titem->owner()->install(*titem, txn);
 	if (titem->needs_unlock())
             titem->owner()->unlock(*titem);

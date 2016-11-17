@@ -253,7 +253,7 @@ int main(int argc, char *argv[]) {
     testSimpleInt();
     testSimpleString();
     testConcurrentInt();
-    testOpacity1();
+//    testOpacity1();
     testNoOpacity1();
     testStringWrapper();
     return 0;
