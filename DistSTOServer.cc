@@ -5,6 +5,11 @@
 #define dprintf(...) printf(__VA_ARGS__)
 // #define dprintf(format, ...)
 
+void DistSTOServer::do_rpc(std::string& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs) {
+    TObject &obj = *((TObject *) objid);
+    obj.do_rpc(_return, op, opargs);
+}
+
 // Phase 1
 // Used to lock modified objects. If the objects are also read, perform checking (phase 2) as well.
 // Return server version if success otherwise a negative value.

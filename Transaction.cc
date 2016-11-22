@@ -1,10 +1,8 @@
 #include "Transaction.hh"
 #include "DistSTOServer.hh"
-#include "DistSTORPCHandler.hh"
 #include <typeinfo>
 
 #include <thrift/protocol/TBinaryProtocol.h>
-#include <thrift/transport/TServerSocket.h>
 #include <thrift/transport/TBufferTransports.h>
 #include <thrift/transport/TSocket.h>
 #include <thrift/transport/TBufferTransports.h>
@@ -537,20 +535,12 @@ std::ostream& operator<<(std::ostream& w, const TransactionGuard& txn) {
  
 int Sto::total_servers = 0;
 DistSTOServer* Sto::server = nullptr;
-DistSTORPCHandler* Sto::rpc_handler = nullptr;
 std::vector<DistSTOClient*> Sto::clients;
-std::vector<RPCClient*> Sto::rpc_clients;
 
 void* runServer(void *server) {
     ((DistSTOServer *) server)->serve();
     return nullptr;
 }
-
-void* runHandler(void *handler) {
-    ((DistSTORPCHandler *) handler)->handle();
-    return nullptr;
-}
-
 
 #include <chrono>
 #include <thread>
@@ -559,13 +549,11 @@ void Sto::initialize_dist_sto(int server_id, int total_servers) {
     assert(server_id >= 0 && server_id < total_servers);
     
     Sto::server = new DistSTOServer(server_id, 49152);
-    Sto::rpc_handler = new DistSTORPCHandler(49153);
     Sto::total_servers = total_servers;
 
     // start the server then returns immediately
-    pthread_t thread_2pc, thread_rpc;
-    pthread_create(&thread_2pc, NULL, runServer, Sto::server);
-    pthread_create(&thread_rpc, NULL, runHandler, Sto::rpc_handler);
+    pthread_t thread;
+    pthread_create(&thread, NULL, runServer, Sto::server);
 
     // give the server enough time to start
     std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -573,18 +561,12 @@ void Sto::initialize_dist_sto(int server_id, int total_servers) {
     // Initialize a client for each peer this server talks to
     for (int i = 0; i < total_servers; i++) {
 	// XXX Need to change host and port later
-        boost::shared_ptr<TSocket> socket1(new TSocket("localhost", 49152));
-        boost::shared_ptr<TTransport> transport1(new TBufferedTransport(socket1));
-        boost::shared_ptr<TProtocol> protocol1(new TBinaryProtocol(transport1));
-        Sto::clients.push_back(new DistSTOClient(protocol1));
-
-        boost::shared_ptr<TSocket> socket2(new TSocket("localhost", 49153));
-        boost::shared_ptr<TTransport> transport2(new TBufferedTransport(socket2));
-        boost::shared_ptr<TProtocol> protocol2(new TBinaryProtocol(transport2));
-        Sto::rpc_clients.push_back(new RPCClient(protocol2));
+        boost::shared_ptr<TSocket> socket(new TSocket("localhost", 49152));
+        boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+        boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+        Sto::clients.push_back(new DistSTOClient(protocol));
     
-        transport1->open();
-        transport2->open();
+        transport->open();
     }
 }
 

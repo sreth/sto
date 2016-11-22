@@ -6,22 +6,23 @@
 #include <thrift/protocol/TBinaryProtocol.h>
 #include <thrift/transport/TServerSocket.h>
 #include <thrift/transport/TBufferTransports.h>
-#include <thrift/transport/TSocket.h>
 #include <thrift/transport/TBufferTransports.h>
-
-#include <thrift/server/TSimpleServer.h>
+#include <concurrency/ThreadManager.h>
+#include <concurrency/PosixThreadFactory.h> 
+#include <server/TThreadPoolServer.h> 
 
 using namespace ::apache::thrift;
 using namespace ::apache::thrift::protocol;
 using namespace ::apache::thrift::transport;
 using namespace ::apache::thrift::server;
+using namespace ::apache::thrift::concurrency;
 
 using boost::shared_ptr;
 
 class DistSTOServer : virtual public DistSTOIf {
 private:
     int _id;
-    TSimpleServer *_server;
+    TThreadPoolServer *_server;
     std::unordered_map<int32_t, std::vector<std::string>> _tuid_titems;
 
 public:
@@ -34,7 +35,17 @@ public:
         shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
         shared_ptr<TTransportFactory> transportFactory(new TBufferedTransportFactory());
         shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
-        _server = new TSimpleServer(processor, serverTransport, transportFactory, protocolFactory);
+
+	// the number of threads should be the same as the number of clients 
+	// so that each client connection has a dedicated server thread
+	shared_ptr<ThreadManager> threadManager = ThreadManager::newSimpleThreadManager(32);
+	shared_ptr<PosixThreadFactory> threadFactory = shared_ptr<PosixThreadFactory>(new PosixThreadFactory());
+	threadManager->threadFactory(threadFactory);
+	threadManager->start();
+
+	// TThreadPoolServer, though is faster than other server types, consumes a lot of resources
+	// Alternative is to use THsHaServer
+        _server = new TThreadPoolServer(processor, serverTransport, transportFactory, protocolFactory, threadManager);
         _tuid_titems = std::unordered_map<int32_t, std::vector<std::string>>();
     }
 
@@ -64,6 +75,8 @@ public:
     bool is_local_obj(const TObject *obj) {
         return obj_reside_on(obj) == _id;
     }
+
+    void do_rpc(std::string& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
 
     int64_t lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, 
                  const std::vector<bool> & preceding_duplicate_read_);
