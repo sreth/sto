@@ -2,10 +2,9 @@
 #include "DistSTOServer.hh"
 #include <typeinfo>
 
-#include <thrift/protocol/TBinaryProtocol.h>
+#include <thrift/protocol/TCompactProtocol.h>
 #include <thrift/transport/TBufferTransports.h>
 #include <thrift/transport/TSocket.h>
-#include <thrift/transport/TBufferTransports.h>
 
 using namespace ::apache::thrift;
 using namespace ::apache::thrift::protocol;
@@ -563,7 +562,7 @@ void Sto::initialize_dist_sto(int server_id, int total_servers) {
 	// XXX Need to change host and port later
         boost::shared_ptr<TSocket> socket(new TSocket("localhost", 49152));
         boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-        boost::shared_ptr<TProtocol> protocol(new TBinaryProtocol(transport));
+        boost::shared_ptr<TProtocol> protocol(new TCompactProtocol(transport));
         Sto::clients.push_back(new DistSTOClient(protocol));
     
         transport->open();

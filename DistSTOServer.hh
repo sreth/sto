@@ -3,9 +3,8 @@
 #include "Interface.hh"
 #include "TWrapped.hh"
 
-#include <thrift/protocol/TBinaryProtocol.h>
+#include <thrift/protocol/TCompactProtocol.h>
 #include <thrift/transport/TServerSocket.h>
-#include <thrift/transport/TBufferTransports.h>
 #include <thrift/transport/TBufferTransports.h>
 #include <concurrency/ThreadManager.h>
 #include <concurrency/PosixThreadFactory.h> 
@@ -34,7 +33,7 @@ public:
         shared_ptr<TProcessor> processor(new DistSTOProcessor(handler));
         shared_ptr<TServerTransport> serverTransport(new TServerSocket(port));
         shared_ptr<TTransportFactory> transportFactory(new TBufferedTransportFactory());
-        shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
+        shared_ptr<TProtocolFactory> protocolFactory(new TCompactProtocolFactory());
 
 	// the number of threads should be the same as the number of clients 
 	// so that each client connection has a dedicated server thread
