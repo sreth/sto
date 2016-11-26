@@ -256,7 +256,7 @@ bool Transaction::try_commit() {
     int32_t tuid = TThread::get_tuid();
     std::unordered_map<int, std::vector<TransItem *>> server_write_titems_map;
     std::unordered_map<int, std::vector<TransItem *>> server_read_titems_map;
-    int64_t max_remote_vers = 0;
+    uint64_t max_remote_vers = 0;
 
     for (unsigned tidx = 0; tidx != tset_size_; ++tidx) {
         it = (tidx % tset_chunk ? it + 1 : tset_[tidx / tset_chunk]);
@@ -317,8 +317,15 @@ bool Transaction::try_commit() {
             }
             goto abort;
         }
-        max_remote_vers = std::max(max_remote_vers, version);
+        max_remote_vers = std::max(max_remote_vers, (uint64_t) version);
     }
+
+    // update version
+    assert(!commit_tid_);
+    fence(); // fence is sufficient. If we acquired locks (ie. there are local objects),
+             // then we will read _TID > locked objects. Otherwise, we don't
+             // care about the local _TID value.
+    commit_tid_ = std::max(_TID, max_remote_vers);
 
     first_write_ = writeset[0];
 
@@ -430,6 +437,14 @@ bool Transaction::try_commit() {
         // XXX should do this parallel 
         Sto::clients[server]->install(tuid, commit_tid_, write_values);
     }
+
+    // update local TID based on the committed TID
+    // technically don't need to do this if no local objects are updated
+    TransactionTid::type new_tid, old_tid;
+    do {
+        old_tid = _TID;
+        new_tid = std::max(old_tid, commit_tid_ + TransactionTid::increment_value);
+    } while(!cmpxchg(&_TID, old_tid, new_tid));
 
 #endif
 

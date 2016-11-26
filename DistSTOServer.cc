@@ -69,7 +69,7 @@ int64_t DistSTOServer::lock(const int32_t tuid, const std::vector<std::string> &
     _lock.unlock();
     new_titems = std::move(titems);
 
-    fence(); // no hardware fence needed since we already did a lock release above
+    fence(); // fence is sufficient since we just acquired locks
     return (int64_t) Transaction::_TID;
 }
 
