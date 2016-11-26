@@ -256,6 +256,8 @@ bool Transaction::try_commit() {
     int32_t tuid = TThread::get_tuid();
     std::unordered_map<int, std::vector<TransItem *>> server_write_titems_map;
     std::unordered_map<int, std::vector<TransItem *>> server_read_titems_map;
+    int64_t max_remote_vers = 0;
+
     for (unsigned tidx = 0; tidx != tset_size_; ++tidx) {
         it = (tidx % tset_chunk ? it + 1 : tset_[tidx / tset_chunk]);
         if (it->has_write()) {
@@ -305,7 +307,8 @@ bool Transaction::try_commit() {
 	} 
 
         // XXX should do this parallel 
-        if (Sto::clients[server]->lock(tuid, str_titems, may_duplicate_items_, preceding_duplicate_read_) < 0) {
+        int64_t version = Sto::clients[server]->lock(tuid, str_titems, may_duplicate_items_, preceding_duplicate_read_);
+        if (version < 0) {
             for (auto iter2 = server_write_titems_map.begin();
                       iter2 != iter;
                       ++iter2) {
@@ -314,6 +317,7 @@ bool Transaction::try_commit() {
             }
             goto abort;
         }
+        max_remote_vers = std::max(max_remote_vers, version);
     }
 
     first_write_ = writeset[0];
@@ -437,7 +441,7 @@ abort_remote:
     for (auto server_write_titems : server_write_titems_map) {
         auto server = server_write_titems.first;
         Sto::clients[server]->abort(tuid);
-    } 
+    }
 
 abort:
     // fence();
