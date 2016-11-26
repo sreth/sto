@@ -15,7 +15,8 @@ void testSimpleCount() {
 
     {
         TransactionGuard t1;
-        c = 100;
+        c = 99;
+	c++;
     }
 
     {

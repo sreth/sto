@@ -122,6 +122,37 @@ public:
         write(x.read());
         return *this;
     }
+
+    DistTBox<T, W>& operator+=(T delta) {
+        auto item = Sto::item(this, 0);
+        item.add_write(item.template write_value<T>(T()) + delta);
+        return *this;
+    }
+
+    DistTBox<T, W>& operator-=(T delta) {
+        auto item = Sto::item(this, 0);
+        item.add_write(item.template write_value<T>(T()) - delta);
+        return *this;
+    }
+
+    DistTBox<T, W>& operator++() {
+        return *this += 1;
+    }
+
+    void operator++(int) {
+        *this += 1;
+    }
+
+    DistTBox<T, W>& operator--() {
+        return *this -= 1;
+    }
+
+    void operator--(int) {
+        *this -= 1;
+    }
+
+
+
 /*
     // valid on local objects only for now
     // this is not atomic either
