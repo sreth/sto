@@ -1,4 +1,5 @@
 #include "DistSTOServer.hh"
+#include "Transaction.hh"
 
 #include <cassert>
 
@@ -69,7 +70,7 @@ int64_t DistSTOServer::lock(const int32_t tuid, const std::vector<std::string> &
     new_titems = std::move(titems);
 
     fence(); // no hardware fence needed since we already did a lock release above
-    return _version;
+    return (int64_t) Transaction::_TID;
 }
 
 // Phase 2
@@ -100,22 +101,24 @@ void DistSTOServer::install(const int32_t tuid, const int64_t tid, const std::ve
     _lock.unlock();
 
     Transaction txn = Transaction(tuid, tid);
-    int64_t new_version = 0;
     for (int i = 0; i < titems.size(); i++) {
         titem = (TransItem *) titems[i].data();
         titem->owner()->set_write_value(*titem, txn, write_values[i]);
         titem->owner()->install(*titem, txn);
-        new_version = std::max(new_version, titem->write_value<int64_t>());
 	if (titem->needs_unlock())
             titem->owner()->unlock(*titem);
         titem->owner()->cleanup(*titem, true);
     }
 
     _lock.lock();
-    new_version = std::max(_version, new_version + 1);
-    _version = new_version;
     _tuid_titems.erase(tuid);
     _lock.unlock();
+
+    TransactionTid::type new_tid, old_tid;
+    do {
+        old_tid = Transaction::_TID;
+        new_tid = std::max(old_tid, tid + TransactionTid::increment_value);
+    } while(!cmpxchg(&Transaction::_TID, old_tid, new_tid));
 }
 
 // Used to abort a transaction by unlocking modified objects and do some cleanup

@@ -3,8 +3,7 @@
 #include "config.h"
 #include "compiler.hh"
 #include "small_vector.hh"
-#include "TRcu.hh"
-
+#include "TRcu.hh" 
 #include <algorithm>
 #include <functional>
 #include <memory>
@@ -206,7 +205,7 @@ public:
         bool run;
     } global_epochs;
     typedef TransactionTid::type tid_type;
-private:
+// private:
     static TransactionTid::type _TID;
 public:
 
@@ -587,6 +586,11 @@ public:
             commit_tid_ = fetch_and_add(&_TID, TransactionTid::increment_value);
         return commit_tid_;
     }
+
+    void set_commit_tid(tid_type new_tid) const {
+        commit_tid_ = new_tid;
+    }
+
     void set_version(TVersion& vers, TVersion::type flags = 0) const {
         vers.set_version(commit_tid() | flags);
     }
