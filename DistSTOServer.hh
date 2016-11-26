@@ -10,6 +10,7 @@
 #include <concurrency/ThreadManager.h>
 #include <concurrency/PosixThreadFactory.h> 
 #include <server/TThreadPoolServer.h> 
+#include <mutex>
 
 using namespace ::apache::thrift;
 using namespace ::apache::thrift::protocol;
@@ -23,7 +24,10 @@ class DistSTOServer : virtual public DistSTOIf {
 private:
     int _id;
     TThreadPoolServer *_server;
-    std::unordered_map<int32_t, std::vector<std::string>> _tuid_titems;
+
+    std::mutex _lock; // protects all variables below
+    std::unordered_map<int32_t, std::vector<std::string>> _tuid_titems; // the list for each tuid is NOT protected by the lock - unnecessary if we only execute one RPC at a time per tuid
+    int64_t _version = 1;
 
 public:
     DistSTOServer(int id, int port) {
