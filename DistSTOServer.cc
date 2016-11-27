@@ -25,12 +25,13 @@ void DistSTOServer::broadcast() {
 void DistSTOServer::wait() {
     DistSTOServer::broadcast();
     _lock.lock();
-    while (_connections != Sto::total_servers - 1) {
+    while (_connections < Sto::total_servers - 1) {
         _lock.unlock();
 	std::this_thread::sleep_for(std::chrono::seconds(1));
         _lock.lock();
     }
     _connections = 0;
+    _lock.unlock();
 }
 
 void DistSTOServer::do_rpc(std::string& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs) {

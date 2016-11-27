@@ -9,21 +9,33 @@
 #include "DistSTOServer.hh"
 
 // One server is dedicated as the owner of tbox
-// Other servers would have to send 
+// Other servers would have to send need rpc 
 void testSimpleCount() {
     DistTBox<int> c;
 
-    {
-        TransactionGuard t1;
-        c = 99;
-	c++;
+    if (Sto::server->is_local_obj(&c)) {
+        {
+            TransactionGuard t_start;
+            c = 0;
+        }
     }
 
+    Sto::server->wait();
+
+    for (int i = 0; i < 1000; i++) {
+        {
+            TransactionGuard t;
+            c++;
+        }
+    }
+    
+    Sto::server->wait();
+
     {
-        TransactionGuard t2;
+        TransactionGuard t_end;
         int c_read = c;
-        assert(c_read == 100);
-    } 
+        assert(c_read == 1000 * Sto::total_servers);
+    }
 
     printf("PASS: %s\n", __FUNCTION__);
 }
