@@ -563,10 +563,11 @@ void* runServer(void *server) {
 #include <chrono>
 #include <thread>
 
+// XXX: assuming that all servers are one same machine
 void Sto::initialize_dist_sto(int server_id, int total_servers) {
     assert(server_id >= 0 && server_id < total_servers);
     
-    Sto::server = new DistSTOServer(server_id, 49152);
+    Sto::server = new DistSTOServer(server_id, 49152 + server_id);
     Sto::total_servers = total_servers;
 
     // start the server then returns immediately
@@ -579,7 +580,7 @@ void Sto::initialize_dist_sto(int server_id, int total_servers) {
     // Initialize a client for each peer this server talks to
     for (int i = 0; i < total_servers; i++) {
 	// XXX Need to change host and port later
-        boost::shared_ptr<TSocket> socket(new TSocket("localhost", 49152));
+        boost::shared_ptr<TSocket> socket(new TSocket("localhost", 49152 + server_id));
         boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
         boost::shared_ptr<TProtocol> protocol(new TCompactProtocol(transport));
         Sto::clients.push_back(new DistSTOClient(protocol));
@@ -595,7 +596,6 @@ void Sto::initialize_dist_sto(int server_id, int total_servers) {
 int32_t TThread::get_tuid() {
     int32_t tuid = (Sto::server->id() << 3) | TThread::id();
     assert(tuid >= 0 && tuid < 32); 
-//    return tuid; 
-    return TThread::id();
+    return tuid; 
 }
 

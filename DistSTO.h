@@ -21,6 +21,7 @@
 class DistSTOIf {
  public:
   virtual ~DistSTOIf() {}
+  virtual void notify() = 0;
   virtual void do_rpc(std::string& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs) = 0;
   virtual int64_t lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) = 0;
   virtual bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) = 0;
@@ -55,6 +56,9 @@ class DistSTOIfSingletonFactory : virtual public DistSTOIfFactory {
 class DistSTONull : virtual public DistSTOIf {
  public:
   virtual ~DistSTONull() {}
+  void notify() {
+    return;
+  }
   void do_rpc(std::string& /* _return */, const int64_t /* objid */, const int64_t /* op */, const std::vector<std::string> & /* opargs */) {
     return;
   }
@@ -72,6 +76,80 @@ class DistSTONull : virtual public DistSTOIf {
   void abort(const int32_t /* tuid */) {
     return;
   }
+};
+
+
+class DistSTO_notify_args {
+ public:
+
+  DistSTO_notify_args(const DistSTO_notify_args&);
+  DistSTO_notify_args& operator=(const DistSTO_notify_args&);
+  DistSTO_notify_args() {
+  }
+
+  virtual ~DistSTO_notify_args() throw();
+
+  bool operator == (const DistSTO_notify_args & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const DistSTO_notify_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const DistSTO_notify_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class DistSTO_notify_pargs {
+ public:
+
+
+  virtual ~DistSTO_notify_pargs() throw();
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class DistSTO_notify_result {
+ public:
+
+  DistSTO_notify_result(const DistSTO_notify_result&);
+  DistSTO_notify_result& operator=(const DistSTO_notify_result&);
+  DistSTO_notify_result() {
+  }
+
+  virtual ~DistSTO_notify_result() throw();
+
+  bool operator == (const DistSTO_notify_result & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const DistSTO_notify_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const DistSTO_notify_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class DistSTO_notify_presult {
+ public:
+
+
+  virtual ~DistSTO_notify_presult() throw();
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
 };
 
 typedef struct _DistSTO_do_rpc_args__isset {
@@ -653,6 +731,9 @@ class DistSTOClient : virtual public DistSTOIf {
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> getOutputProtocol() {
     return poprot_;
   }
+  void notify();
+  void send_notify();
+  void recv_notify();
   void do_rpc(std::string& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
   void send_do_rpc(const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
   void recv_do_rpc(std::string& _return);
@@ -683,6 +764,7 @@ class DistSTOProcessor : public ::apache::thrift::TDispatchProcessor {
   typedef  void (DistSTOProcessor::*ProcessFunction)(int32_t, ::apache::thrift::protocol::TProtocol*, ::apache::thrift::protocol::TProtocol*, void*);
   typedef std::map<std::string, ProcessFunction> ProcessMap;
   ProcessMap processMap_;
+  void process_notify(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_do_rpc(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_lock(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_check(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
@@ -691,6 +773,7 @@ class DistSTOProcessor : public ::apache::thrift::TDispatchProcessor {
  public:
   DistSTOProcessor(boost::shared_ptr<DistSTOIf> iface) :
     iface_(iface) {
+    processMap_["notify"] = &DistSTOProcessor::process_notify;
     processMap_["do_rpc"] = &DistSTOProcessor::process_do_rpc;
     processMap_["lock"] = &DistSTOProcessor::process_lock;
     processMap_["check"] = &DistSTOProcessor::process_check;
@@ -724,6 +807,15 @@ class DistSTOMultiface : virtual public DistSTOIf {
     ifaces_.push_back(iface);
   }
  public:
+  void notify() {
+    size_t sz = ifaces_.size();
+    size_t i = 0;
+    for (; i < (sz - 1); ++i) {
+      ifaces_[i]->notify();
+    }
+    ifaces_[i]->notify();
+  }
+
   void do_rpc(std::string& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs) {
     size_t sz = ifaces_.size();
     size_t i = 0;
@@ -800,6 +892,9 @@ class DistSTOConcurrentClient : virtual public DistSTOIf {
   boost::shared_ptr< ::apache::thrift::protocol::TProtocol> getOutputProtocol() {
     return poprot_;
   }
+  void notify();
+  int32_t send_notify();
+  void recv_notify(const int32_t seqid);
   void do_rpc(std::string& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
   int32_t send_do_rpc(const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
   void recv_do_rpc(std::string& _return, const int32_t seqid);

@@ -1,10 +1,37 @@
 #include "DistSTOServer.hh"
 #include "Transaction.hh"
 
+#include <chrono>
+#include <thread>
 #include <cassert>
 
 #define dprintf(...) printf(__VA_ARGS__)
 // #define dprintf(format, ...)
+
+void DistSTOServer::notify() {
+   _lock.lock();
+   _connections++;
+   _lock.unlock();
+}
+
+void DistSTOServer::broadcast() {
+    for (int i = 0; i < Sto::total_servers; i++) {
+        if (i != _id) {
+            Sto::clients[i]->notify();
+        }
+    }
+}
+
+void DistSTOServer::wait() {
+    DistSTOServer::broadcast();
+    _lock.lock();
+    while (_connections != Sto::total_servers - 1) {
+        _lock.unlock();
+	std::this_thread::sleep_for(std::chrono::seconds(1));
+        _lock.lock();
+    }
+    _connections = 0;
+}
 
 void DistSTOServer::do_rpc(std::string& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs) {
     TObject &obj = *((TObject *) objid);

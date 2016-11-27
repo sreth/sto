@@ -25,7 +25,10 @@ private:
     TThreadPoolServer *_server;
 
     std::mutex _lock; // protects all variables below
-    std::unordered_map<int32_t, std::vector<std::string>> _tuid_titems; // the list for each tuid is NOT protected by the lock - unnecessary if we only execute one RPC at a time per tuid
+    std::unordered_map<int32_t, std::vector<std::string>> _tuid_titems; // the list for each tuid is NOT protected 
+                                                                        // by the lock - unnecessary if we only 
+                                                                        // execute one RPC at a time per tuid
+    int _connections;
 
 public:
     DistSTOServer(int id, int port) {
@@ -49,6 +52,7 @@ public:
 	// Alternative is to use THsHaServer
         _server = new TThreadPoolServer(processor, serverTransport, transportFactory, protocolFactory, threadManager);
         _tuid_titems = std::unordered_map<int32_t, std::vector<std::string>>();
+        _connections = 0;
     }
 
     // unique server ID assigned by the user
@@ -63,6 +67,7 @@ public:
 
     // return the server id that owns the object
     static int obj_reside_on(TObject *obj) {
+        // XXX need a better hash function 
         std::hash<TObject*> tobject_hash;
         return tobject_hash(obj) % Sto::total_servers;
     }
@@ -77,6 +82,12 @@ public:
     bool is_local_obj(const TObject *obj) {
         return obj_reside_on(obj) == _id;
     }
+
+    void notify();
+  
+    void broadcast();
+
+    void wait();
 
     void do_rpc(std::string& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
 
