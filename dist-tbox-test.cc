@@ -11,13 +11,14 @@
 // One server is dedicated as the owner of tbox
 // Other servers would have to send need rpc 
 void testSimpleCount() {
+
+    Sto::server->wait();
+
     DistTBox<int> c;
 
-    if (Sto::server->is_local_obj(&c)) {
-        {
-            TransactionGuard t_start;
-            c = 0;
-        }
+    {
+        TransactionGuard t_start;
+        c = 0;
     }
 
     Sto::server->wait();
@@ -25,7 +26,9 @@ void testSimpleCount() {
     for (int i = 0; i < 1000; i++) {
         {
             TransactionGuard t;
-            c++;
+            int c_read = c;
+            c_read++;
+            c = c_read;
         }
     }
     

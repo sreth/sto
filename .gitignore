@@ -46,5 +46,5 @@
 /DistSTOClient
 /DistSTOServer
 /unit-dist-tbox
-/unit-dist-tcounter
+/dist-tbox-test
 DistSTO_server.skeleton.cc
