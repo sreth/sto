@@ -30,7 +30,7 @@ void DistSTOServer::wait() {
 	std::this_thread::sleep_for(std::chrono::seconds(1));
         _lock.lock();
     }
-    _connections = 0;
+    _connections -= (Sto::total_servers - 1);
     _lock.unlock();
 }
 
@@ -54,6 +54,7 @@ int64_t DistSTOServer::lock(const int32_t tuid, const std::vector<std::string> &
     int rindex = 0; // index for preceding_duplicate_read_
     int index = 0;
     bool abort = false;
+
     while (index < titems.size()) {
         titem = (TransItem *) titems[index].data();
 	// perform phase 1 for write objects
@@ -77,6 +78,7 @@ int64_t DistSTOServer::lock(const int32_t tuid, const std::vector<std::string> &
         }
         index++;
     }
+
     if (abort) {
         while (index > 0) {
             index--;
@@ -98,6 +100,7 @@ int64_t DistSTOServer::lock(const int32_t tuid, const std::vector<std::string> &
     new_titems = std::move(titems);
 
     fence(); // fence is sufficient since we just acquired locks
+
     return (int64_t) Transaction::_TID;
 }
 
@@ -152,7 +155,6 @@ void DistSTOServer::install(const int32_t tuid, const int64_t tid, const std::ve
 // Used to abort a transaction by unlocking modified objects and do some cleanup
 void DistSTOServer::abort(const int32_t tuid) {
     TransItem *titem;
-
     _lock.lock();
     assert(_tuid_titems.find(tuid) != _tuid_titems.end());
     auto &titems = _tuid_titems[tuid];

@@ -8,34 +8,32 @@
 #include "StringWrapper.hh"
 #include "DistSTOServer.hh"
 
+DistTBox<int> c;
+
 // One server is dedicated as the owner of tbox
-// Other servers would have to send need rpc 
+// Other servers would have to send rpc to modify tbox
 void testSimpleCount() {
 
-    Sto::server->wait();
-
-    DistTBox<int> c;
-
-    {
-        TransactionGuard t_start;
+    // only owner should initialize the object
+    if (Sto::server->is_local_obj(&c)) {
+        TransactionGuard t;
         c = 0;
     }
 
     Sto::server->wait();
 
     for (int i = 0; i < 1000; i++) {
-        {
-            TransactionGuard t;
+        TRANSACTION {
             int c_read = c;
             c_read++;
             c = c_read;
-        }
+        } RETRY(true);
     }
-    
+  
     Sto::server->wait();
 
     {
-        TransactionGuard t_end;
+        TransactionGuard t;
         int c_read = c;
         assert(c_read == 1000 * Sto::total_servers);
     }

@@ -64,7 +64,6 @@ public:
             std::vector<std::string> args;
             int server = Sto::server->obj_reside_on(this);
             Sto::clients[server]->do_rpc(buf, (int64_t) this, READ_OP, args);
-
             version_type &ver = *(version_type *) buf.data();
             item.add_read(ver);
             read_type &obj = *(T *) (buf.data() + sizeof(version_type));

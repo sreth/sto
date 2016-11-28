@@ -161,9 +161,8 @@ public:
         v = new_v;
     }
     static void set_version_unlock(type& v, type new_v) {
-        // XXX: Distributed STO
-        // assert(is_locked_here(v));
-        // assert(!is_locked(new_v) || is_locked_here(new_v));
+        assert(is_locked_here(v));
+        assert(!is_locked(new_v) || is_locked_here(new_v));
         new_v &= ~(lock_bit | threadid_mask);
         release_fence();
         v = new_v;
@@ -199,7 +198,9 @@ public:
         return cur_vers == old_vers || cur_vers == (old_vers | lock_bit | TThread::id());
     }
     static bool check_version(type cur_vers, type old_vers, int here) {
-        assert(!is_locked_elsewhere(old_vers));
+        // XXX: Distributed STO
+        // assert(!is_locked_elsewhere(old_vers));
+        assert(!is_locked_elsewhere(old_vers, here));
         // cur_vers allowed to be locked by us
         return cur_vers == old_vers || cur_vers == (old_vers | lock_bit | here);
     }

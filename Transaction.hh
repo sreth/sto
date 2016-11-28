@@ -595,7 +595,9 @@ public:
         vers.set_version(commit_tid() | flags);
     }
     void set_version_unlock(TVersion& vers, TransItem& item, TVersion::type flags = 0) const {
-        vers.set_version_unlock(commit_tid() | flags);
+        // XXX: Distributed STO
+        vers.set_version_unlock(commit_tid() | flags, threadid_);
+        // vers.set_version_unlock(commit_tid() | flags);
         item.clear_needs_unlock();
     }
     void assign_version_unlock(TVersion& vers, TransItem& item, TVersion::type flags = 0) const {
@@ -608,8 +610,7 @@ public:
         vers.set_version(v | flags);
     }
     void set_version_unlock(TNonopaqueVersion& vers, TransItem& item, TNonopaqueVersion::type flags = 0) const {
-        // XXX: Distributed sto
-        // assert(state_ == s_committing_locked || state_ == s_committing);
+        assert(state_ == s_committing_locked || state_ == s_committing);
         tid_type v = commit_tid_ ? commit_tid_ : TransactionTid::next_unflagged_nonopaque_version(vers.value());
         vers.set_version_unlock(v | flags);
         item.clear_needs_unlock();

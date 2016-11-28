@@ -579,7 +579,7 @@ void Sto::initialize_dist_sto(int server_id, int total_servers) {
     // Initialize a client for each peer this server talks to
     for (int i = 0; i < total_servers; i++) {
 	// XXX Need to change host and port later
-        boost::shared_ptr<TSocket> socket(new TSocket("localhost", 49152 + server_id));
+        boost::shared_ptr<TSocket> socket(new TSocket("localhost", 49152 + i));
         boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
         boost::shared_ptr<TProtocol> protocol(new TCompactProtocol(transport));
         Sto::clients.push_back(new DistSTOClient(protocol));
