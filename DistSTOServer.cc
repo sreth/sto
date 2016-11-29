@@ -60,10 +60,6 @@ int64_t DistSTOServer::lock(const int32_t tuid, const std::vector<std::string> &
             titem->owner()->unlock(*titem);
             titem->owner()->cleanup(*titem, false);
         }
-
-        _lock.lock();
-        _tuid_titems.erase(tuid);
-        _lock.unlock();
         return -1;
     }
     assert(rindex == preceding_duplicate_read_.size());
@@ -148,9 +144,9 @@ void DistSTOServer::abort(const int32_t tuid) {
 // Below methods are mainly used for testing
 
 void DistSTOServer::ping() {
-   _lock.lock();
+   _test_lock.lock();
    _connections++;
-   _lock.unlock();
+   _test_lock.unlock();
 }
 
 void DistSTOServer::broadcast() {
@@ -162,15 +158,25 @@ void DistSTOServer::broadcast() {
 }
 
 void DistSTOServer::wait(int total_threads) {
+    assert(total_threads % Sto::total_servers == 0);
+    int threads_per_server = total_threads / Sto::total_servers;
     DistSTOServer::broadcast();
-    _lock.lock();
+    _test_lock.lock();
     _connections++;
     while (_connections < total_threads) {
-        _lock.unlock();
+        _test_lock.unlock();
 	std::this_thread::sleep_for(std::chrono::seconds(1));
-        _lock.lock();
+        _test_lock.lock();
     }
-    _connections -= total_threads;
-    _lock.unlock();
+    _nthreads = (_nthreads + 1) % threads_per_server;
+    while (_nthreads) {
+        _test_lock.unlock();
+	std::this_thread::sleep_for(std::chrono::seconds(1));
+        _test_lock.lock();
+    }
+    if (_connections >= total_threads) {
+        _connections -= total_threads;
+    }
+    _test_lock.unlock();
 }
 
