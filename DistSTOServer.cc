@@ -8,7 +8,7 @@
 #define dprintf(...) printf(__VA_ARGS__)
 // #define dprintf(format, ...)
 
-void DistSTOServer::notify() {
+void DistSTOServer::ping() {
    _lock.lock();
    _connections++;
    _lock.unlock();
@@ -17,7 +17,7 @@ void DistSTOServer::notify() {
 void DistSTOServer::broadcast() {
     for (int i = 0; i < Sto::total_servers; i++) {
         if (i != _id) {
-            Sto::clients[i]->notify();
+            Sto::clients[i]->ping();
         }
     }
 }

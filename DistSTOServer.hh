@@ -65,6 +65,11 @@ public:
         _server->serve();
     }
 
+    // stop the server
+    void stop() {
+        _server->stop();
+    }
+
     // return the server id that owns the object
     static int obj_reside_on(TObject *obj) {
         // XXX need a better hash function 
@@ -83,7 +88,7 @@ public:
         return obj_reside_on(obj) == _id;
     }
 
-    void notify();
+    void ping();
   
     void broadcast();
 

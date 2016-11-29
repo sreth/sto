@@ -680,6 +680,8 @@ private:
 class DistSTOServer;
 class DistSTORPCHandler;
 
+using namespace ::apache::thrift::transport;
+
 class Sto {
   
 public:
@@ -695,8 +697,14 @@ public:
     // a client for each peer that this server talks to
     static std::vector<DistSTOClient*> clients;
 
+    // a connection for each client
+    static std::vector<boost::shared_ptr<TTransport>> connections;
+
     // this is called once to initialize the system
     static void initialize_dist_sto(int this_server_id, int total_servers);
+
+    // this is called once distributed sto is done
+    static void end_dist_sto();
 
 /******************** End of Distributed STO ********************/ 
 

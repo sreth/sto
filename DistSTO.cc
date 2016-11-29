@@ -9,11 +9,11 @@
 
 
 
-DistSTO_notify_args::~DistSTO_notify_args() throw() {
+DistSTO_ping_args::~DistSTO_ping_args() throw() {
 }
 
 
-uint32_t DistSTO_notify_args::read(::apache::thrift::protocol::TProtocol* iprot) {
+uint32_t DistSTO_ping_args::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   apache::thrift::protocol::TInputRecursionTracker tracker(*iprot);
   uint32_t xfer = 0;
@@ -41,10 +41,10 @@ uint32_t DistSTO_notify_args::read(::apache::thrift::protocol::TProtocol* iprot)
   return xfer;
 }
 
-uint32_t DistSTO_notify_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
+uint32_t DistSTO_ping_args::write(::apache::thrift::protocol::TProtocol* oprot) const {
   uint32_t xfer = 0;
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
-  xfer += oprot->writeStructBegin("DistSTO_notify_args");
+  xfer += oprot->writeStructBegin("DistSTO_ping_args");
 
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
@@ -52,14 +52,14 @@ uint32_t DistSTO_notify_args::write(::apache::thrift::protocol::TProtocol* oprot
 }
 
 
-DistSTO_notify_pargs::~DistSTO_notify_pargs() throw() {
+DistSTO_ping_pargs::~DistSTO_ping_pargs() throw() {
 }
 
 
-uint32_t DistSTO_notify_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
+uint32_t DistSTO_ping_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
   uint32_t xfer = 0;
   apache::thrift::protocol::TOutputRecursionTracker tracker(*oprot);
-  xfer += oprot->writeStructBegin("DistSTO_notify_pargs");
+  xfer += oprot->writeStructBegin("DistSTO_ping_pargs");
 
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
@@ -67,11 +67,11 @@ uint32_t DistSTO_notify_pargs::write(::apache::thrift::protocol::TProtocol* opro
 }
 
 
-DistSTO_notify_result::~DistSTO_notify_result() throw() {
+DistSTO_ping_result::~DistSTO_ping_result() throw() {
 }
 
 
-uint32_t DistSTO_notify_result::read(::apache::thrift::protocol::TProtocol* iprot) {
+uint32_t DistSTO_ping_result::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   apache::thrift::protocol::TInputRecursionTracker tracker(*iprot);
   uint32_t xfer = 0;
@@ -99,11 +99,11 @@ uint32_t DistSTO_notify_result::read(::apache::thrift::protocol::TProtocol* ipro
   return xfer;
 }
 
-uint32_t DistSTO_notify_result::write(::apache::thrift::protocol::TProtocol* oprot) const {
+uint32_t DistSTO_ping_result::write(::apache::thrift::protocol::TProtocol* oprot) const {
 
   uint32_t xfer = 0;
 
-  xfer += oprot->writeStructBegin("DistSTO_notify_result");
+  xfer += oprot->writeStructBegin("DistSTO_ping_result");
 
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
@@ -111,11 +111,11 @@ uint32_t DistSTO_notify_result::write(::apache::thrift::protocol::TProtocol* opr
 }
 
 
-DistSTO_notify_presult::~DistSTO_notify_presult() throw() {
+DistSTO_ping_presult::~DistSTO_ping_presult() throw() {
 }
 
 
-uint32_t DistSTO_notify_presult::read(::apache::thrift::protocol::TProtocol* iprot) {
+uint32_t DistSTO_ping_presult::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   apache::thrift::protocol::TInputRecursionTracker tracker(*iprot);
   uint32_t xfer = 0;
@@ -1344,18 +1344,18 @@ uint32_t DistSTO_abort_presult::read(::apache::thrift::protocol::TProtocol* ipro
   return xfer;
 }
 
-void DistSTOClient::notify()
+void DistSTOClient::ping()
 {
-  send_notify();
-  recv_notify();
+  send_ping();
+  recv_ping();
 }
 
-void DistSTOClient::send_notify()
+void DistSTOClient::send_ping()
 {
   int32_t cseqid = 0;
-  oprot_->writeMessageBegin("notify", ::apache::thrift::protocol::T_CALL, cseqid);
+  oprot_->writeMessageBegin("ping", ::apache::thrift::protocol::T_CALL, cseqid);
 
-  DistSTO_notify_pargs args;
+  DistSTO_ping_pargs args;
   args.write(oprot_);
 
   oprot_->writeMessageEnd();
@@ -1363,7 +1363,7 @@ void DistSTOClient::send_notify()
   oprot_->getTransport()->flush();
 }
 
-void DistSTOClient::recv_notify()
+void DistSTOClient::recv_ping()
 {
 
   int32_t rseqid = 0;
@@ -1383,12 +1383,12 @@ void DistSTOClient::recv_notify()
     iprot_->readMessageEnd();
     iprot_->getTransport()->readEnd();
   }
-  if (fname.compare("notify") != 0) {
+  if (fname.compare("ping") != 0) {
     iprot_->skip(::apache::thrift::protocol::T_STRUCT);
     iprot_->readMessageEnd();
     iprot_->getTransport()->readEnd();
   }
-  DistSTO_notify_presult result;
+  DistSTO_ping_presult result;
   result.read(iprot_);
   iprot_->readMessageEnd();
   iprot_->getTransport()->readEnd();
@@ -1705,37 +1705,37 @@ bool DistSTOProcessor::dispatchCall(::apache::thrift::protocol::TProtocol* iprot
   return true;
 }
 
-void DistSTOProcessor::process_notify(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext)
+void DistSTOProcessor::process_ping(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext)
 {
   void* ctx = NULL;
   if (this->eventHandler_.get() != NULL) {
-    ctx = this->eventHandler_->getContext("DistSTO.notify", callContext);
+    ctx = this->eventHandler_->getContext("DistSTO.ping", callContext);
   }
-  ::apache::thrift::TProcessorContextFreer freer(this->eventHandler_.get(), ctx, "DistSTO.notify");
+  ::apache::thrift::TProcessorContextFreer freer(this->eventHandler_.get(), ctx, "DistSTO.ping");
 
   if (this->eventHandler_.get() != NULL) {
-    this->eventHandler_->preRead(ctx, "DistSTO.notify");
+    this->eventHandler_->preRead(ctx, "DistSTO.ping");
   }
 
-  DistSTO_notify_args args;
+  DistSTO_ping_args args;
   args.read(iprot);
   iprot->readMessageEnd();
   uint32_t bytes = iprot->getTransport()->readEnd();
 
   if (this->eventHandler_.get() != NULL) {
-    this->eventHandler_->postRead(ctx, "DistSTO.notify", bytes);
+    this->eventHandler_->postRead(ctx, "DistSTO.ping", bytes);
   }
 
-  DistSTO_notify_result result;
+  DistSTO_ping_result result;
   try {
-    iface_->notify();
+    iface_->ping();
   } catch (const std::exception& e) {
     if (this->eventHandler_.get() != NULL) {
-      this->eventHandler_->handlerError(ctx, "DistSTO.notify");
+      this->eventHandler_->handlerError(ctx, "DistSTO.ping");
     }
 
     ::apache::thrift::TApplicationException x(e.what());
-    oprot->writeMessageBegin("notify", ::apache::thrift::protocol::T_EXCEPTION, seqid);
+    oprot->writeMessageBegin("ping", ::apache::thrift::protocol::T_EXCEPTION, seqid);
     x.write(oprot);
     oprot->writeMessageEnd();
     oprot->getTransport()->writeEnd();
@@ -1744,17 +1744,17 @@ void DistSTOProcessor::process_notify(int32_t seqid, ::apache::thrift::protocol:
   }
 
   if (this->eventHandler_.get() != NULL) {
-    this->eventHandler_->preWrite(ctx, "DistSTO.notify");
+    this->eventHandler_->preWrite(ctx, "DistSTO.ping");
   }
 
-  oprot->writeMessageBegin("notify", ::apache::thrift::protocol::T_REPLY, seqid);
+  oprot->writeMessageBegin("ping", ::apache::thrift::protocol::T_REPLY, seqid);
   result.write(oprot);
   oprot->writeMessageEnd();
   bytes = oprot->getTransport()->writeEnd();
   oprot->getTransport()->flush();
 
   if (this->eventHandler_.get() != NULL) {
-    this->eventHandler_->postWrite(ctx, "DistSTO.notify", bytes);
+    this->eventHandler_->postWrite(ctx, "DistSTO.ping", bytes);
   }
 }
 
@@ -2033,19 +2033,19 @@ void DistSTOProcessor::process_abort(int32_t seqid, ::apache::thrift::protocol::
   return processor;
 }
 
-void DistSTOConcurrentClient::notify()
+void DistSTOConcurrentClient::ping()
 {
-  int32_t seqid = send_notify();
-  recv_notify(seqid);
+  int32_t seqid = send_ping();
+  recv_ping(seqid);
 }
 
-int32_t DistSTOConcurrentClient::send_notify()
+int32_t DistSTOConcurrentClient::send_ping()
 {
   int32_t cseqid = this->sync_.generateSeqId();
   ::apache::thrift::async::TConcurrentSendSentry sentry(&this->sync_);
-  oprot_->writeMessageBegin("notify", ::apache::thrift::protocol::T_CALL, cseqid);
+  oprot_->writeMessageBegin("ping", ::apache::thrift::protocol::T_CALL, cseqid);
 
-  DistSTO_notify_pargs args;
+  DistSTO_ping_pargs args;
   args.write(oprot_);
 
   oprot_->writeMessageEnd();
@@ -2056,7 +2056,7 @@ int32_t DistSTOConcurrentClient::send_notify()
   return cseqid;
 }
 
-void DistSTOConcurrentClient::recv_notify(const int32_t seqid)
+void DistSTOConcurrentClient::recv_ping(const int32_t seqid)
 {
 
   int32_t rseqid = 0;
@@ -2085,7 +2085,7 @@ void DistSTOConcurrentClient::recv_notify(const int32_t seqid)
         iprot_->readMessageEnd();
         iprot_->getTransport()->readEnd();
       }
-      if (fname.compare("notify") != 0) {
+      if (fname.compare("ping") != 0) {
         iprot_->skip(::apache::thrift::protocol::T_STRUCT);
         iprot_->readMessageEnd();
         iprot_->getTransport()->readEnd();
@@ -2094,7 +2094,7 @@ void DistSTOConcurrentClient::recv_notify(const int32_t seqid)
         using ::apache::thrift::protocol::TProtocolException;
         throw TProtocolException(TProtocolException::INVALID_DATA);
       }
-      DistSTO_notify_presult result;
+      DistSTO_ping_presult result;
       result.read(iprot_);
       iprot_->readMessageEnd();
       iprot_->getTransport()->readEnd();

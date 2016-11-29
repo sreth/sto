@@ -22,7 +22,7 @@ void testSimpleCount() {
 
     Sto::server->wait();
 
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 1; i++) {
         TRANSACTION {
             int c_read = c;
             c_read++;
@@ -35,8 +35,10 @@ void testSimpleCount() {
     {
         TransactionGuard t;
         int c_read = c;
-        assert(c_read == 1000 * Sto::total_servers);
+        assert(c_read == 1 * Sto::total_servers);
     }
+
+    Sto::server->wait();
 
     printf("PASS: %s\n", __FUNCTION__);
 }
@@ -47,5 +49,6 @@ int main(int argc, char *argv[]) {
     int total_servers = atoi(argv[2]);
     Sto::initialize_dist_sto(server_id, total_servers);
     testSimpleCount();
+    Sto::end_dist_sto();
     return 0;
 }

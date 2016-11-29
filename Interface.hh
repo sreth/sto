@@ -96,7 +96,6 @@ public:
         type m = v & (lock_bit | threadid_mask);
         return m != 0 && m != (lock_bit | here);
     }
-
     static bool try_lock(type& v) {
         type vv = v;
         return bool_cmpxchg(&v, vv & ~lock_bit, vv | lock_bit | TThread::id());

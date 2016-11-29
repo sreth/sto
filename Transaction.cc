@@ -2,9 +2,11 @@
 #include "DistSTOServer.hh"
 #include <typeinfo>
 
+
 #include <thrift/protocol/TCompactProtocol.h>
 #include <thrift/transport/TBufferTransports.h>
 #include <thrift/transport/TSocket.h>
+
 
 using namespace ::apache::thrift;
 using namespace ::apache::thrift::protocol;
@@ -554,6 +556,7 @@ std::ostream& operator<<(std::ostream& w, const TransactionGuard& txn) {
 int Sto::total_servers = 0;
 DistSTOServer* Sto::server = nullptr;
 std::vector<DistSTOClient*> Sto::clients;
+std::vector<boost::shared_ptr<TTransport>> Sto::connections;
 
 void* runServer(void *server) {
     ((DistSTOServer *) server)->serve();
@@ -581,11 +584,24 @@ void Sto::initialize_dist_sto(int server_id, int total_servers) {
 	// XXX Need to change host and port later
         boost::shared_ptr<TSocket> socket(new TSocket("localhost", 49152 + i));
         boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+        Sto::connections.push_back(transport);
+        if (i != server_id) {
+            transport->open();
+        }
+
         boost::shared_ptr<TProtocol> protocol(new TCompactProtocol(transport));
         Sto::clients.push_back(new DistSTOClient(protocol));
-    
-        transport->open();
     }
+}
+
+void Sto::end_dist_sto() {
+    // close all connection with peers
+    for (int i = 0 ; i < Sto::total_servers; i++) {
+        if (i != Sto::server->id()) {
+            Sto::connections[i]->close();
+        }
+    }
+    Sto::server->stop();
 }
 
 // The original thread id is 5 bits. So we assign 2 upper bits 
@@ -593,7 +609,9 @@ void Sto::initialize_dist_sto(int server_id, int total_servers) {
 // there are no more than 4 servers running and each of them
 // cannot have more than 8 threads)
 int32_t TThread::get_tuid() {
-    int32_t tuid = (Sto::server->id() << 3) | TThread::id();
+    int threadid = TThread::id();
+    assert(threadid >= 0 && threadid < 8);
+    int32_t tuid = (Sto::server->id() << 3) | threadid;
     assert(tuid >= 0 && tuid < 32); 
     return tuid; 
 }
