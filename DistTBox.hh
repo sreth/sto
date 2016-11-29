@@ -19,38 +19,39 @@ public:
 
     static const int READ_OP = 0;
 
-    void do_rpc(std::string &_return, int64_t op, const std::vector<std::string> &opargs) {
+    bool do_rpc(int64_t op, const std::vector<std::string> &opargs, int64_t &version, std::string &value) {
         switch(op) {
         case READ_OP:
             {
                 // arguments: none
-                // return:
-                // first sizeof(version_type) bytes are version
-                // next sizeof(read_type) bytes are data
-                // data is only valid if the version is unlocked
-
                 // allocate space in return buffer
-                _return.resize(sizeof(version_type) + sizeof(T));
-                version_type &ver = *(version_type *) _return.data();
-                T &obj = *(T *) (_return.data() + sizeof(version_type));
+                value.resize(sizeof(T));
+                T &obj = *(T *) (value.data());
 
                 // TODO: we need to change TWrapped / TransProxy to not use a transaction,
                 // so that we can use the usual read() method instead of this loop
                 while (1) {
-                    version_type v = vers_;
+                    version_type v1 = vers_;
+                    version_type v2;
                     fence();
                     obj = v_.access();
                     fence();
-                    ver = vers_;
-                    if (v == ver || ver.is_locked()) {
-                        break;
+                    v2 = vers_;
+                    if (v2.is_locked()) {
+                        // abort if the object is locked instead of blocking
+                        return false;
+                    }
+                    if (v1 == v2) {
+                        version = (int64_t) v1.value();
+                        return true;
                     }
                     relax_fence();
                 }
-
+                // unreachable
                 break;
             }
         }
+        return false;
     }
 
     read_type read() const {
@@ -60,13 +61,14 @@ public:
         } else if (Sto::server->is_local_obj(this)) {
             return v_.read(item, vers_);
         } else {
-            std::string buf;
             std::vector<std::string> args;
             int server = Sto::server->obj_reside_on(this);
-            Sto::clients[server]->do_rpc(buf, (int64_t) this, READ_OP, args);
-            version_type &ver = *(version_type *) buf.data();
-            item.add_read(ver);
-            read_type &obj = *(T *) (buf.data() + sizeof(version_type));
+            DoRpcResponse resp;
+            Sto::clients[server]->do_rpc(resp, (int64_t) (TObject *) this, READ_OP, args);
+            if (!resp.success)
+                Sto::abort();
+            item.add_read((version_type) resp.version);
+            read_type &obj = *(T *) (resp.value.data());
             return obj;
         }
     }

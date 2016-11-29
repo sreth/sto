@@ -584,8 +584,8 @@ public:
     }
 
     // Distributed STO
-    virtual void do_rpc(std::string &_return, int64_t op, const std::vector<std::string> &opargs) {
-        (void) _return, (void) op, (void) opargs;
+    virtual bool do_rpc(int64_t op, const std::vector<std::string> &opargs, int64_t &version, std::string &value) {
+        (void) op, (void) opargs, (void) version, (void) value;
     }
     virtual std::string get_write_value(TransItem& item) {
         return std::string();
