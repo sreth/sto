@@ -73,8 +73,8 @@ public:
     // return the server id that owns the object
     static int obj_reside_on(TObject *obj) {
         // XXX need a better hash function 
-        std::hash<TObject*> tobject_hash;
-        return tobject_hash(obj) % Sto::total_servers;
+        std::hash<uint64_t> hash;
+        return hash(((uint64_t)obj) >> 3) % Sto::total_servers;
     }
     static int obj_reside_on(const TObject *obj) {
         return obj_reside_on(const_cast<TObject*>(obj));
@@ -88,12 +88,6 @@ public:
         return obj_reside_on(obj) == _id;
     }
 
-    void ping();
-  
-    void broadcast();
-
-    void wait();
-
     void do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
 
     int64_t lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, 
@@ -105,5 +99,12 @@ public:
     void install(const int32_t tuid, const int64_t tid, const std::vector<std::string> & write_values);
 
     void abort(const int32_t tuid);
+
+    // Below methods are mainly used for testing
+    void ping();
+  
+    void broadcast();
+
+    void wait(int total_threads);
 };
 

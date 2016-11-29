@@ -8,32 +8,6 @@
 #define dprintf(...) printf(__VA_ARGS__)
 // #define dprintf(format, ...)
 
-void DistSTOServer::ping() {
-   _lock.lock();
-   _connections++;
-   _lock.unlock();
-}
-
-void DistSTOServer::broadcast() {
-    for (int i = 0; i < Sto::total_servers; i++) {
-        if (i != _id) {
-            Sto::clients[i]->ping();
-        }
-    }
-}
-
-void DistSTOServer::wait() {
-    DistSTOServer::broadcast();
-    _lock.lock();
-    while (_connections < Sto::total_servers - 1) {
-        _lock.unlock();
-	std::this_thread::sleep_for(std::chrono::seconds(1));
-        _lock.lock();
-    }
-    _connections -= (Sto::total_servers - 1);
-    _lock.unlock();
-}
-
 void DistSTOServer::do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs) {
     TObject &obj = *((TObject *) objid);
     _return.success = obj.do_rpc(op, opargs, _return.version, _return.value);
@@ -170,3 +144,33 @@ void DistSTOServer::abort(const int32_t tuid) {
     _tuid_titems.erase(tuid);
     _lock.unlock();
 }
+
+// Below methods are mainly used for testing
+
+void DistSTOServer::ping() {
+   _lock.lock();
+   _connections++;
+   _lock.unlock();
+}
+
+void DistSTOServer::broadcast() {
+    for (int i = 0; i < Sto::total_servers; i++) {
+        if (i != _id) {
+            Sto::clients[i]->ping();
+        }
+    }
+}
+
+void DistSTOServer::wait(int total_threads) {
+    DistSTOServer::broadcast();
+    _lock.lock();
+    _connections++;
+    while (_connections < total_threads) {
+        _lock.unlock();
+	std::this_thread::sleep_for(std::chrono::seconds(1));
+        _lock.lock();
+    }
+    _connections -= total_threads;
+    _lock.unlock();
+}
+
