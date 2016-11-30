@@ -24,11 +24,10 @@ private:
     int _id;
     TThreadPoolServer *_server;
 
-    std::mutex _lock; // protects _tuid_titems
+    std::mutex _lock; // protects variables below
     std::unordered_map<int32_t, std::vector<std::string>> _tuid_titems; // the list for each tuid is NOT protected 
                                                                         // by the lock - unnecessary if we only 
                                                                         // execute one RPC at a time per tuid
-    std::mutex _test_lock; // protects all variables below
     int _connections;
     int _nthreads;
 

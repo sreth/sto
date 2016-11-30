@@ -144,9 +144,9 @@ void DistSTOServer::abort(const int32_t tuid) {
 // Below methods are mainly used for testing
 
 void DistSTOServer::ping() {
-   _test_lock.lock();
+   _lock.lock();
    _connections++;
-   _test_lock.unlock();
+   _lock.unlock();
 }
 
 void DistSTOServer::broadcast() {
@@ -161,22 +161,22 @@ void DistSTOServer::wait(int total_threads) {
     assert(total_threads % Sto::total_servers == 0);
     int threads_per_server = total_threads / Sto::total_servers;
     DistSTOServer::broadcast();
-    _test_lock.lock();
+    _lock.lock();
     _connections++;
     while (_connections < total_threads) {
-        _test_lock.unlock();
+        _lock.unlock();
 	std::this_thread::sleep_for(std::chrono::seconds(1));
-        _test_lock.lock();
+        _lock.lock();
     }
     _nthreads = (_nthreads + 1) % threads_per_server;
     while (_nthreads) {
-        _test_lock.unlock();
+        _lock.unlock();
 	std::this_thread::sleep_for(std::chrono::seconds(1));
-        _test_lock.lock();
+        _lock.lock();
     }
     if (_connections >= total_threads) {
         _connections -= total_threads;
     }
-    _test_lock.unlock();
+    _lock.unlock();
 }
 

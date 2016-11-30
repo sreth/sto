@@ -577,7 +577,7 @@ void Sto::initialize_dist_sto(int server_id, int total_servers) {
     pthread_t thread;
     pthread_create(&thread, NULL, runServer, Sto::server);
 
-    std::this_thread::sleep_for(std::chrono::seconds(5));
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     // Initialize a client for each peer this server talks to
     for (int i = 0; i < total_servers; i++) {

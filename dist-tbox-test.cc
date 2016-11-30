@@ -72,17 +72,28 @@ void testSimpleCountWithNThreads(int N) {
 
     // wait till everyone is done with the above transaction
     Sto::server->wait(Sto::total_servers);
+}
+
+void testSimpleCountWith1Thread() {
+   
+    testSimpleCountWithNThreads(1);
 
     printf("PASS: %s\n", __FUNCTION__);
 }
 
+void testSimpleCountWith2Threads() {
+   
+    testSimpleCountWithNThreads(2);
+
+    printf("PASS: %s\n", __FUNCTION__);
+}
 
 int main(int argc, char *argv[]) {
     int server_id = atoi(argv[1]);
     int total_servers = atoi(argv[2]);
     Sto::initialize_dist_sto(server_id, total_servers);
-    testSimpleCountWithNThreads(1);
-    testSimpleCountWithNThreads(2);
+    //testSimpleCountWith1Thread();
+    testSimpleCountWith2Threads();
     Sto::end_dist_sto();
     return 0;
 }
