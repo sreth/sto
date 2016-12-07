@@ -28,6 +28,11 @@ private:
     std::unordered_map<int32_t, std::vector<std::string>> _tuid_titems; // the list for each tuid is NOT protected 
                                                                         // by the lock - unnecessary if we only 
                                                                         // execute one RPC at a time per tuid
+
+    // Use Murmur3_32 hash function to hash 64-bit addresses
+    static uint32_t murmur3_32(const char *key, uint32_t len, uint32_t seed);
+    static uint32_t hash(uint64_t addr);
+
     // variables used for testing
     int64_t _version;
     int _nthreads;
@@ -84,10 +89,9 @@ public:
 
     // return the server id that owns the object
     static int obj_reside_on(TObject *obj) {
-        // XXX need a better hash function 
-        std::hash<uint64_t> hash;
-        return hash(((uint64_t)obj) >> 3) % Sto::total_servers;
+        return hash((uint64_t) obj) % Sto::total_servers;
     }
+
     static int obj_reside_on(const TObject *obj) {
         return obj_reside_on(const_cast<TObject*>(obj));
     }
