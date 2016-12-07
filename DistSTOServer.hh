@@ -28,6 +28,7 @@ private:
     std::unordered_map<int32_t, std::vector<std::string>> _tuid_titems; // the list for each tuid is NOT protected 
                                                                         // by the lock - unnecessary if we only 
                                                                         // execute one RPC at a time per tuid
+    // variables used for testing
     int _connections;
     int _nthreads;
 

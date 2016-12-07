@@ -2,17 +2,6 @@
 #include "DistSTOServer.hh"
 #include <typeinfo>
 
-
-#include <thrift/protocol/TCompactProtocol.h>
-#include <thrift/transport/TBufferTransports.h>
-#include <thrift/transport/TSocket.h>
-
-
-using namespace ::apache::thrift;
-using namespace ::apache::thrift::protocol;
-using namespace ::apache::thrift::transport;
-using namespace ::apache::thrift::server;
-
 Transaction::testing_type Transaction::testing;
 threadinfo_t Transaction::tinfo[MAX_THREADS];
 __thread int TThread::the_id;
@@ -309,13 +298,13 @@ bool Transaction::try_commit() {
 	} 
 
         // XXX should do this parallel 
-        int64_t version = Sto::clients[server]->lock(tuid, str_titems, may_duplicate_items_, preceding_duplicate_read_);
+        int64_t version = TThread::client(server)->lock(tuid, str_titems, may_duplicate_items_, preceding_duplicate_read_);
         if (version < 0) {
             for (auto iter2 = server_write_titems_map.begin();
                       iter2 != iter;
                       ++iter2) {
                 auto server = iter2->first;
-                Sto::clients[server]->abort(tuid);    
+                TThread::client(server)->abort(tuid);    
             }
             goto abort;
         }
@@ -396,7 +385,7 @@ bool Transaction::try_commit() {
         }
 
         // XXX: should do this parallel 
-        if (!Sto::clients[server]->check(tuid, str_titems, may_duplicate_items_, preceding_duplicate_read_)) {
+        if (!TThread::client(server)->check(tuid, str_titems, may_duplicate_items_, preceding_duplicate_read_)) {
             goto abort_remote;
         }
     }
@@ -437,7 +426,7 @@ bool Transaction::try_commit() {
             write_values.push_back(titem->owner()->get_write_value(*titem));
         }
         // XXX should do this parallel 
-        Sto::clients[server]->install(tuid, commit_tid_, write_values);
+        TThread::client(server)->install(tuid, commit_tid_, write_values);
     }
 
     // update local TID based on the committed TID
@@ -457,7 +446,7 @@ bool Transaction::try_commit() {
 abort_remote:
     for (auto server_write_titems : server_write_titems_map) {
         auto server = server_write_titems.first;
-        Sto::clients[server]->abort(tuid);
+        TThread::client(server)->abort(tuid);
     }
 
 abort:
@@ -552,56 +541,66 @@ std::ostream& operator<<(std::ostream& w, const TransactionGuard& txn) {
     txn.print(w);
     return w;
 }
- 
+
+// ---------- Distributed STO ----------
+
+#include <chrono>
+#include <thread>
+
+__thread std::vector<DistSTOClient*> * TThread::clients = nullptr;
+__thread std::vector<boost::shared_ptr<TTransport>> * TThread::transports = nullptr;
+
 int Sto::total_servers = 0;
 DistSTOServer* Sto::server = nullptr;
-std::vector<DistSTOClient*> Sto::clients;
-std::vector<boost::shared_ptr<TTransport>> Sto::connections;
 
 void* runServer(void *server) {
     ((DistSTOServer *) server)->serve();
     return nullptr;
 }
 
-#include <chrono>
-#include <thread>
-
-// XXX: assuming that all servers are one same machine
-void Sto::initialize_dist_sto(int server_id, int total_servers) {
+void Sto::start_dist_sto(int server_id, int total_servers) {
     assert(server_id >= 0 && server_id < total_servers);
     
     Sto::server = new DistSTOServer(server_id, 49152 + server_id);
     Sto::total_servers = total_servers;
 
-    // start the server then returns immediately
+    // create a separate thread to run the server
     pthread_t thread;
     pthread_create(&thread, NULL, runServer, Sto::server);
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
-
-    // Initialize a client for each peer this server talks to
-    for (int i = 0; i < total_servers; i++) {
-	// XXX Need to change host and port later
-        boost::shared_ptr<TSocket> socket(new TSocket("localhost", 49152 + i));
-        boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
-        Sto::connections.push_back(transport);
-        if (i != server_id) {
-            transport->open();
-        }
-
-        boost::shared_ptr<TProtocol> protocol(new TCompactProtocol(transport));
-        Sto::clients.push_back(new DistSTOClient(protocol));
-    }
 }
 
 void Sto::end_dist_sto() {
-    // close all connection with peers
-    for (int i = 0 ; i < Sto::total_servers; i++) {
-        if (i != Sto::server->id()) {
-            Sto::connections[i]->close();
-        }
-    }
     Sto::server->stop();
+}
+
+// close all client connections
+TThread::~TThread() {
+    for (auto transport : *transports) {
+        transport->close();
+    } 
+}
+
+// get a client that connects to a specific server
+DistSTOClient* TThread::client(int server) {
+    return (*clients)[server];
+}
+
+// set thread id and set up client connections
+void TThread::init(int thread_id) {
+    set_id(thread_id);
+    clients = new std::vector<DistSTOClient*>();
+    transports = new std::vector<boost::shared_ptr<TTransport>>();
+    for (int i = 0; i < Sto::total_servers; i++) {
+        boost::shared_ptr<TSocket> socket(new TSocket("localhost", 49152 + i));
+        boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));
+        transports->push_back(transport);
+        transport->open();
+
+        boost::shared_ptr<TProtocol> protocol(new TCompactProtocol(transport));
+        clients->push_back(new DistSTOClient(protocol));
+    }
 }
 
 // The original thread id is 5 bits. So we assign 2 upper bits 
@@ -609,10 +608,10 @@ void Sto::end_dist_sto() {
 // there are no more than 4 servers running and each of them
 // cannot have more than 8 threads)
 int32_t TThread::get_tuid() {
-    int threadid = TThread::id();
-    assert(threadid >= 0 && threadid < 8);
-    int32_t tuid = (Sto::server->id() << 3) | threadid;
-    assert(tuid >= 0 && tuid < 32); 
+    assert(the_id >= 0 && the_id < 8);
+    int32_t tuid = (Sto::server->id() << 3) | the_id;
+    assert(tuid >= 0 && tuid < 32);
     return tuid; 
 }
 
+// -------------------------------------

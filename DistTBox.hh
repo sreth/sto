@@ -64,7 +64,7 @@ public:
             std::vector<std::string> args;
             int server = Sto::server->obj_reside_on(this);
             DoRpcResponse resp;
-            Sto::clients[server]->do_rpc(resp, (int64_t) (TObject *) this, READ_OP, args);
+            TThread::client(server)->do_rpc(resp, (int64_t) (TObject *) this, READ_OP, args);
             if (!resp.success)
                 Sto::abort();
             item.add_read((version_type) resp.version);

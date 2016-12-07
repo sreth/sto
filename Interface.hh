@@ -10,8 +10,31 @@ class Transaction;
 class TransItem;
 class TransProxy;
 
+
+// ---------- Distributed STO ----------
+
+#include "DistSTO.h"
+
+#include <thrift/transport/TSocket.h>
+
+using namespace ::apache::thrift::transport;
+
+class Sto;
+
+// -------------------------------------
+
 class TThread {
     static __thread int the_id;
+
+    // ---------- Distributed STO ----------
+
+    // each thread has its own set of client connections 
+    // that it can use to talk to other servers
+    static __thread std::vector<DistSTOClient*> *clients;
+    static __thread std::vector<boost::shared_ptr<TTransport>> *transports;
+
+    // -------------------------------------
+
 public:
     static __thread Transaction* txn;
 
@@ -22,11 +45,25 @@ public:
         assert(id >= 0 && id < 32);
         the_id = id;
     }
+    
+    // ---------- Distributed STO ----------
 
-    // used by distributed sto to determine the transaction id
-    // the current thread is running
+    // get a client connection that talks to a specific server
+    static DistSTOClient* client(int server);
+
+    // initialize thread id and set up client connections
+    static void init(int thread_id);
+
+    // close all client connections
+    ~TThread();
+
+    // used by distributed sto to determine the unique
+    // transaction id the current thread is running
     static int32_t get_tuid();
+
+    // -------------------------------------
 };
+
 
 class TransactionTid {
 public:
