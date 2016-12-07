@@ -143,42 +143,63 @@ void DistSTOServer::abort(const int32_t tuid) {
 
 // Below methods are used only for testing
 
-void DistSTOServer::ping() {
-   _lock.lock();
-   _connections++;
-   _lock.unlock();
-}
-
-void DistSTOServer::broadcast() {
-    for (int i = 0; i < Sto::total_servers; i++) {
-        if (i != _id) {
-            TThread::client(i)->ping();
-        }
-    }
-}
-
-void DistSTOServer::wait(int total_threads) {
-    assert(total_threads % Sto::total_servers == 0);
-    int threads_per_server = total_threads / Sto::total_servers;
-    DistSTOServer::broadcast();
-  
+void DistSTOServer::notify() {
+    assert(Sto::server->id() == 0);
     _lock.lock();
-    _connections++;
-    while (_connections < total_threads) {
-        _lock.unlock();
-	std::this_thread::sleep_for(std::chrono::seconds(1));
-        std::this_thread::yield();
-        _lock.lock();
-    }
-    _nthreads = (_nthreads + 1) % threads_per_server;
-    while (_nthreads) {
-        _lock.unlock();
-	std::this_thread::sleep_for(std::chrono::seconds(1));
-        _lock.lock();
-    }
-    if (_connections >= total_threads) {
-        _connections -= total_threads;
-    }
+    _nthreads++;
     _lock.unlock();
+}
+
+void DistSTOServer::advance() {
+    assert(Sto::server->id() != 0);
+    _lock.lock();
+    _version++;
+    _lock.unlock();
+}
+
+// Designate thread 0 of server 0 as the coordinator
+void DistSTOServer::wait(int total_threads) {
+    // advance thread's version
+    TThread::advance();
+    // if this thread is not the coordinator
+    if (Sto::server->id()) {
+        // inform the coordinator
+        TThread::client(0)->notify();
+        _lock.lock();
+        // spin until server's version reaches this thread's version
+        while (TThread::version() > _version) {
+            _lock.unlock();
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            _lock.lock();
+        }
+        _lock.unlock();
+    } else {
+        _lock.lock();
+        _nthreads++;
+        // if this thread is not the coordinator
+        if (TThread::id()) {
+            while (TThread::version() > _version) {
+                _lock.unlock();
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+                _lock.lock();
+            }
+            _lock.unlock();
+        } else {
+            // this thread is the coordinator
+            while (_nthreads < total_threads) {
+                _lock.unlock();
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+                _lock.lock();
+            }
+            _nthreads -= total_threads;
+            assert(_nthreads == 0);
+            // tell threads on this server to proceed
+            _version++;
+            _lock.unlock();
+            // tell threads on other servers to proceed
+            for (int i = 1; i < Sto::total_servers; i++)
+                TThread::client(i)->advance();
+        }
+    } 
 }
 

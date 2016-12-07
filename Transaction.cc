@@ -549,6 +549,7 @@ std::ostream& operator<<(std::ostream& w, const TransactionGuard& txn) {
 
 __thread std::vector<DistSTOClient*> * TThread::clients = nullptr;
 __thread std::vector<boost::shared_ptr<TTransport>> * TThread::transports = nullptr;
+__thread int64_t TThread::_version = 0;
 
 int Sto::total_servers = 0;
 DistSTOServer* Sto::server = nullptr;
@@ -588,10 +589,11 @@ DistSTOClient* TThread::client(int server) {
 }
 
 // set thread id and set up client connections
-void TThread::init(int thread_id) {
-    set_id(thread_id);
+void TThread::init(int thread_id, int64_t version) {
+    set_id(thread_id); 
     clients = new std::vector<DistSTOClient*>();
     transports = new std::vector<boost::shared_ptr<TTransport>>();
+    _version = version;
     for (int i = 0; i < Sto::total_servers; i++) {
         boost::shared_ptr<TSocket> socket(new TSocket("localhost", 49152 + i));
         boost::shared_ptr<TTransport> transport(new TBufferedTransport(socket));

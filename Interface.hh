@@ -33,6 +33,9 @@ class TThread {
     static __thread std::vector<DistSTOClient*> *clients;
     static __thread std::vector<boost::shared_ptr<TTransport>> *transports;
 
+    // used for testing
+    static __thread int64_t _version;
+
     // -------------------------------------
 
 public:
@@ -52,7 +55,7 @@ public:
     static DistSTOClient* client(int server);
 
     // initialize thread id and set up client connections
-    static void init(int thread_id);
+    static void init(int thread_id, int64_t version);
 
     // close all client connections
     ~TThread();
@@ -60,6 +63,15 @@ public:
     // used by distributed sto to determine the unique
     // transaction id the current thread is running
     static int32_t get_tuid();
+
+    // Used for testing
+    static int64_t version() {
+        return _version;
+    }
+
+    static void advance() {
+        _version++;
+    }
 
     // -------------------------------------
 };

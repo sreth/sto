@@ -29,7 +29,7 @@ private:
                                                                         // by the lock - unnecessary if we only 
                                                                         // execute one RPC at a time per tuid
     // variables used for testing
-    int _connections;
+    int64_t _version;
     int _nthreads;
 
 public:
@@ -54,7 +54,9 @@ public:
 	// Alternative is to use THsHaServer
         _server = new TThreadPoolServer(processor, serverTransport, transportFactory, protocolFactory, threadManager);
         _tuid_titems = std::unordered_map<int32_t, std::vector<std::string>>();
-        _connections = 0;
+
+        // Used for testing
+        _version = 0;
         _nthreads = 0;
     }
 
@@ -71,6 +73,13 @@ public:
     // stop the server
     void stop() {
         _server->stop();
+    }
+
+    int64_t version() {
+        _lock.lock();
+        int64_t version = _version;
+        _lock.unlock();
+        return version;
     }
 
     // return the server id that owns the object
@@ -104,9 +113,9 @@ public:
     void abort(const int32_t tuid);
 
     // Below methods are mainly used for testing
-    void ping();
+    void notify();
   
-    void broadcast();
+    void advance();
 
     void wait(int total_threads);
 };

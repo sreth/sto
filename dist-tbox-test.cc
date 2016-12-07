@@ -23,11 +23,11 @@ void* simpleCount(void *input) {
     struct Args* args = (struct Args*) input;
     int thread_id = args->thread_id;
     int nthreads = args->total_threads;
-
-    TThread::init(thread_id);
+    int64_t version = Sto::server->version();
+    TThread::init(thread_id, version);
     
-    // only owner should initialize the object
-    if (Sto::server->is_local_obj(&c)) {
+    // only thread 0 of owner should initialize the object
+    if (Sto::server->is_local_obj(&c) && TThread::id() == 0) {
         TransactionGuard t;
         c = 0;
     }
@@ -49,9 +49,9 @@ void* simpleCount(void *input) {
     {
         TransactionGuard t;
         int c_read = c;
-	if (c_read != count_per_thread * nthreads) {
-		std::cout << "Server " << Sto::server->id() << " thread " << TThread::id() << " gets total = " << c_read << "\n";
-	}
+        if (c_read != count_per_thread * nthreads) {
+	    std::cout << "Server " << Sto::server->id() << " thread " << TThread::id() << " gets total = " << c_read << "\n";
+        }
         assert(c_read == count_per_thread * nthreads);
     }
 
@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
     int total_servers = atoi(argv[2]);
     Sto::start_dist_sto(server_id, total_servers);
     testSimpleCountWith1Thread();
-    testSimpleCountWith4Thread();
+    testSimpleCountWith4Threads();
     testSimpleCountWith8Threads();
     Sto::end_dist_sto();
     return 0;

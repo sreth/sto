@@ -252,8 +252,6 @@ int main(int argc, char *argv[]) {
     int server_id = atoi(argv[1]);
     int total_servers = atoi(argv[2]);
     Sto::start_dist_sto(server_id, total_servers);
-    TThread::init(0);
-
     testSimpleInt();
     testSimpleString();
     testConcurrentInt();
