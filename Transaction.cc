@@ -576,17 +576,11 @@ void Sto::end_dist_sto() {
     Sto::server->stop();
 }
 
-// close all client connections
-TThread::~TThread() {
-    for (auto transport : *transports) {
-        transport->close();
-    } 
-}
-
 // get a client that connects to a specific server
 DistSTOClient* TThread::client(int server) {
     return (*clients)[server];
 }
+
 
 // set thread id and set up client connections
 void TThread::init(int thread_id, int64_t version) {
@@ -603,6 +597,13 @@ void TThread::init(int thread_id, int64_t version) {
         boost::shared_ptr<TProtocol> protocol(new TCompactProtocol(transport));
         clients->push_back(new DistSTOClient(protocol));
     }
+}
+
+// close all client connections
+void TThread::cleanup() {
+    for (auto transport : *transports) {
+        transport->close();
+    } 
 }
 
 // The original thread id is 5 bits. So we assign 2 upper bits 

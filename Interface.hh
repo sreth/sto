@@ -58,7 +58,7 @@ public:
     static void init(int thread_id, int64_t version);
 
     // close all client connections
-    ~TThread();
+    static void cleanup();
 
     // used by distributed sto to determine the unique
     // transaction id the current thread is running
