@@ -547,7 +547,7 @@ std::ostream& operator<<(std::ostream& w, const TransactionGuard& txn) {
 #include <chrono>
 #include <thread>
 
-__thread std::vector<DistSTOClient*> * TThread::clients = nullptr;
+__thread std::vector<boost::shared_ptr<DistSTOClient>> * TThread::clients = nullptr;
 __thread std::vector<boost::shared_ptr<TTransport>> * TThread::transports = nullptr;
 __thread int64_t TThread::_version = 0;
 
@@ -577,7 +577,7 @@ void Sto::end_dist_sto() {
 }
 
 // get a client that connects to a specific server
-DistSTOClient* TThread::client(int server) {
+boost::shared_ptr<DistSTOClient> TThread::client(int server) {
     return (*clients)[server];
 }
 
@@ -585,7 +585,7 @@ DistSTOClient* TThread::client(int server) {
 // set thread id and set up client connections
 void TThread::init(int thread_id, int64_t version) {
     set_id(thread_id); 
-    clients = new std::vector<DistSTOClient*>();
+    clients = new std::vector<boost::shared_ptr<DistSTOClient>>();
     transports = new std::vector<boost::shared_ptr<TTransport>>();
     _version = version;
     for (int i = 0; i < Sto::total_servers; i++) {
@@ -595,7 +595,8 @@ void TThread::init(int thread_id, int64_t version) {
         transport->open();
 
         boost::shared_ptr<TProtocol> protocol(new TCompactProtocol(transport));
-        clients->push_back(new DistSTOClient(protocol));
+	boost::shared_ptr<DistSTOClient> client(new DistSTOClient(protocol));
+        clients->push_back(client);
     }
 }
 
@@ -603,7 +604,9 @@ void TThread::init(int thread_id, int64_t version) {
 void TThread::cleanup() {
     for (auto transport : *transports) {
         transport->close();
-    } 
+    }
+    delete transports;
+    delete clients; 
 }
 
 // The original thread id is 5 bits. So we assign 2 upper bits 

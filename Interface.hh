@@ -30,7 +30,7 @@ class TThread {
 
     // each thread has its own set of client connections 
     // that it can use to talk to other servers
-    static __thread std::vector<DistSTOClient*> *clients;
+    static __thread std::vector<boost::shared_ptr<DistSTOClient>> *clients;
     static __thread std::vector<boost::shared_ptr<TTransport>> *transports;
 
     // used for testing
@@ -52,7 +52,7 @@ public:
     // ---------- Distributed STO ----------
 
     // get a client connection that talks to a specific server
-    static DistSTOClient* client(int server);
+    static boost::shared_ptr<DistSTOClient> client(int server);
 
     // initialize thread id and set up client connections
     static void init(int thread_id, int64_t version);
