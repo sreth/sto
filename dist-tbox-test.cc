@@ -24,7 +24,7 @@ struct Args {
 
 void* simpleCount(void *input) {
     struct Args* args = (struct Args*) input;
-    int thread_id = args->thread_id;
+    int thread_id = TThread::get_global_id(args->thread_id);
     int nthreads = args->total_threads;
     delete input;
 

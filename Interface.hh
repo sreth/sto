@@ -60,9 +60,9 @@ public:
     // close all client connections
     static void cleanup();
 
-    // used by distributed sto to determine the unique
-    // transaction id the current thread is running
-    static int32_t get_tuid();
+    // used by distributed sto to obtain a globally
+    // unique thread id for the current running thread
+    static int32_t get_global_id(int local_id);
 
     // Used for testing
     static int64_t version() {

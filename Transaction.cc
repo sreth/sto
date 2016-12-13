@@ -244,7 +244,7 @@ bool Transaction::try_commit() {
     writeset[0] = tset_size_;
 
     TransItem* it = nullptr;
-    int32_t tuid = TThread::get_tuid();
+    int32_t tuid = TThread::id();
     std::unordered_map<int, std::vector<TransItem *>> server_write_titems_map;
     std::unordered_map<int, std::vector<TransItem *>> server_read_titems_map;
     uint64_t max_remote_vers = 0;
@@ -613,11 +613,11 @@ void TThread::cleanup() {
 // for server id and 3 lower bits for thread id (make sure that
 // there are no more than 4 servers running and each of them
 // cannot have more than 8 threads)
-int32_t TThread::get_tuid() {
-    assert(the_id >= 0 && the_id < 8);
-    int32_t tuid = (Sto::server->id() << 3) | the_id;
-    assert(tuid >= 0 && tuid < 32);
-    return tuid; 
+int32_t TThread::get_global_id(int local_id) {
+    assert(local_id >= 0 && local_id < 8);
+    int32_t global_id = (Sto::server->id() << 3) | local_id;
+    assert(global_id >= 0 && global_id < 32);
+    return global_id; 
 }
 
 // -------------------------------------
