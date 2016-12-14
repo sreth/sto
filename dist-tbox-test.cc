@@ -1,4 +1,4 @@
-#undef NDEBUG
+// #undef NDEBUG
 #include <string>
 #include <iostream>
 #include <assert.h>
@@ -32,25 +32,25 @@ void* simpleCount(void *input) {
     TThread::init(thread_id, version);
     
     // only thread 0 of the owner should initialize the object
-    if (Sto::server->is_local_obj(&c1) && TThread::id() == 0) {
+    if (Sto::server->is_local_obj(&c1) && TThread::id() % 8 == 0) {
         std::cout << "Server " << Sto::server->id() << " is the owner of c1\n";
         TransactionGuard t;
         c1 = 0;
     }
 
-    if (Sto::server->is_local_obj(&c2) && TThread::id() == 0) {
+    if (Sto::server->is_local_obj(&c2) && TThread::id() % 8 == 0) {
         std::cout << "Server " << Sto::server->id() << " is the owner of c2\n";
         TransactionGuard t;
         c2 = 0;
     }
 
-    if (Sto::server->is_local_obj(&c3) && TThread::id() == 0) {
+    if (Sto::server->is_local_obj(&c3) && TThread::id() % 8 == 0) {
         std::cout << "Server " << Sto::server->id() << " is the owner of c3\n";
         TransactionGuard t;
         c3 = 0;
     }
 
-    if (Sto::server->is_local_obj(&c4) && TThread::id() == 0) {
+    if (Sto::server->is_local_obj(&c4) && TThread::id() % 8 == 0) {
         std::cout << "Server " << Sto::server->id() << " is the owner of c4\n";
         TransactionGuard t;
         c4 = 0;
@@ -183,10 +183,10 @@ int main(int argc, char *argv[]) {
     int server_id = atoi(argv[1]);
     int total_servers = atoi(argv[2]);
     Sto::start_dist_sto(server_id, total_servers);
-    testSimpleCountWith1Thread();
+    //testSimpleCountWith1Thread();
     testSimpleCountWith2Threads();
-    testSimpleCountWith4Threads();
-    testSimpleCountWith8Threads();
+    //testSimpleCountWith4Threads();
+    //testSimpleCountWith8Threads();
     Sto::end_dist_sto();
     return 0;
 }
