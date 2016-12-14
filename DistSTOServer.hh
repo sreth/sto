@@ -122,5 +122,7 @@ public:
     void advance();
 
     void wait(int total_threads);
+
+    void transmit(const std::string& data);
 };
 

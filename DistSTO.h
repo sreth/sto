@@ -23,6 +23,7 @@ class DistSTOIf {
   virtual ~DistSTOIf() {}
   virtual void notify() = 0;
   virtual void advance() = 0;
+  virtual void transmit(const std::string& data) = 0;
   virtual void do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs) = 0;
   virtual int64_t lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) = 0;
   virtual bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) = 0;
@@ -61,6 +62,9 @@ class DistSTONull : virtual public DistSTOIf {
     return;
   }
   void advance() {
+    return;
+  }
+  void transmit(const std::string& /* data */) {
     return;
   }
   void do_rpc(DoRpcResponse& /* _return */, const int64_t /* objid */, const int64_t /* op */, const std::vector<std::string> & /* opargs */) {
@@ -225,6 +229,92 @@ class DistSTO_advance_presult {
 
 
   virtual ~DistSTO_advance_presult() throw();
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
+typedef struct _DistSTO_transmit_args__isset {
+  _DistSTO_transmit_args__isset() : data(false) {}
+  bool data :1;
+} _DistSTO_transmit_args__isset;
+
+class DistSTO_transmit_args {
+ public:
+
+  DistSTO_transmit_args(const DistSTO_transmit_args&);
+  DistSTO_transmit_args& operator=(const DistSTO_transmit_args&);
+  DistSTO_transmit_args() : data() {
+  }
+
+  virtual ~DistSTO_transmit_args() throw();
+  std::string data;
+
+  _DistSTO_transmit_args__isset __isset;
+
+  void __set_data(const std::string& val);
+
+  bool operator == (const DistSTO_transmit_args & rhs) const
+  {
+    if (!(data == rhs.data))
+      return false;
+    return true;
+  }
+  bool operator != (const DistSTO_transmit_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const DistSTO_transmit_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class DistSTO_transmit_pargs {
+ public:
+
+
+  virtual ~DistSTO_transmit_pargs() throw();
+  const std::string* data;
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class DistSTO_transmit_result {
+ public:
+
+  DistSTO_transmit_result(const DistSTO_transmit_result&);
+  DistSTO_transmit_result& operator=(const DistSTO_transmit_result&);
+  DistSTO_transmit_result() {
+  }
+
+  virtual ~DistSTO_transmit_result() throw();
+
+  bool operator == (const DistSTO_transmit_result & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const DistSTO_transmit_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const DistSTO_transmit_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class DistSTO_transmit_presult {
+ public:
+
+
+  virtual ~DistSTO_transmit_presult() throw();
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
 
@@ -815,6 +905,9 @@ class DistSTOClient : virtual public DistSTOIf {
   void advance();
   void send_advance();
   void recv_advance();
+  void transmit(const std::string& data);
+  void send_transmit(const std::string& data);
+  void recv_transmit();
   void do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
   void send_do_rpc(const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
   void recv_do_rpc(DoRpcResponse& _return);
@@ -847,6 +940,7 @@ class DistSTOProcessor : public ::apache::thrift::TDispatchProcessor {
   ProcessMap processMap_;
   void process_notify(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_advance(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  void process_transmit(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_do_rpc(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_lock(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_check(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
@@ -857,6 +951,7 @@ class DistSTOProcessor : public ::apache::thrift::TDispatchProcessor {
     iface_(iface) {
     processMap_["notify"] = &DistSTOProcessor::process_notify;
     processMap_["advance"] = &DistSTOProcessor::process_advance;
+    processMap_["transmit"] = &DistSTOProcessor::process_transmit;
     processMap_["do_rpc"] = &DistSTOProcessor::process_do_rpc;
     processMap_["lock"] = &DistSTOProcessor::process_lock;
     processMap_["check"] = &DistSTOProcessor::process_check;
@@ -906,6 +1001,15 @@ class DistSTOMultiface : virtual public DistSTOIf {
       ifaces_[i]->advance();
     }
     ifaces_[i]->advance();
+  }
+
+  void transmit(const std::string& data) {
+    size_t sz = ifaces_.size();
+    size_t i = 0;
+    for (; i < (sz - 1); ++i) {
+      ifaces_[i]->transmit(data);
+    }
+    ifaces_[i]->transmit(data);
   }
 
   void do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs) {
@@ -990,6 +1094,9 @@ class DistSTOConcurrentClient : virtual public DistSTOIf {
   void advance();
   int32_t send_advance();
   void recv_advance(const int32_t seqid);
+  void transmit(const std::string& data);
+  int32_t send_transmit(const std::string& data);
+  void recv_transmit(const int32_t seqid);
   void do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
   int32_t send_do_rpc(const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
   void recv_do_rpc(DoRpcResponse& _return, const int32_t seqid);
