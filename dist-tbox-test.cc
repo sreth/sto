@@ -58,7 +58,7 @@ void* simpleCount(void *input) {
 
     // wait till everyone is done with initialization
     Sto::server->wait(nthreads);
-    
+ 
     for (int i = 0; i < count_per_thread; i++) {
         TRANSACTION {
             int c1_read = c1;
@@ -91,36 +91,24 @@ void* simpleCount(void *input) {
     {
         TransactionGuard t;
         int c1_read = c1;
-        if (c1_read != count_per_thread * nthreads) {
-	    std::cout << "Server " << Sto::server->id() << " thread " << TThread::id() << " gets c1 = " << c1_read << "\n";
-        }
         assert(c1_read == count_per_thread * nthreads);
     }
 
     {
         TransactionGuard t;
         int c2_read = c2;
-        if (c2_read != count_per_thread * nthreads) {
-	    std::cout << "Server " << Sto::server->id() << " thread " << TThread::id() << " gets c2 = " << c2_read << "\n";
-        }
         assert(c2_read == count_per_thread * nthreads);
     }
 
     {
         TransactionGuard t;
         int c3_read = c3;
-        if (c3_read != count_per_thread * nthreads) {
-	    std::cout << "Server " << Sto::server->id() << " thread " << TThread::id() << " gets c3 = " << c3_read << "\n";
-        }
         assert(c3_read == count_per_thread * nthreads);
     }
 
     {
         TransactionGuard t;
         int c4_read = c4;
-        if (c4_read != count_per_thread * nthreads) {
-	    std::cout << "Server " << Sto::server->id() << " thread " << TThread::id() << " gets c4 = " << c4_read << "\n";
-        }
         assert(c4_read == count_per_thread * nthreads);
     }
 
@@ -183,10 +171,10 @@ int main(int argc, char *argv[]) {
     int server_id = atoi(argv[1]);
     int total_servers = atoi(argv[2]);
     Sto::start_dist_sto(server_id, total_servers);
-    //testSimpleCountWith1Thread();
+    testSimpleCountWith1Thread();
     testSimpleCountWith2Threads();
-    //testSimpleCountWith4Threads();
-    //testSimpleCountWith8Threads();
+    testSimpleCountWith4Threads();
+    testSimpleCountWith8Threads();
     Sto::end_dist_sto();
     return 0;
 }

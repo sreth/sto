@@ -42,8 +42,10 @@ int64_t DistSTOServer::lock(const int32_t tuid, const std::vector<std::string> &
             assert(rindex < preceding_duplicate_read_.size());
             if (!titem->owner()->check(*titem, txn)
                 && (!may_duplicate_items_ || !preceding_duplicate_read_[rindex])) {
-	        titem->owner()->unlock(*titem);
-                titem->owner()->cleanup(*titem, false);
+                if (titem->needs_unlock())
+	            titem->owner()->unlock(*titem);
+                if (titem->has_write())
+                    titem->owner()->cleanup(*titem, false);
                 abort = true;
                 break;
 	    } else {
@@ -57,8 +59,10 @@ int64_t DistSTOServer::lock(const int32_t tuid, const std::vector<std::string> &
         while (index > 0) {
             index--;
             titem = (TransItem *) titems[index].data();
-            titem->owner()->unlock(*titem);
-            titem->owner()->cleanup(*titem, false);
+            if (titem->needs_unlock())
+                titem->owner()->unlock(*titem);
+            if (titem->has_write()) 
+                titem->owner()->cleanup(*titem, false);
         }
         return -1;
     }
@@ -96,6 +100,14 @@ bool DistSTOServer::check(const int32_t tuid, const std::vector<std::string> & t
 void DistSTOServer::install(const int32_t tuid, const int64_t tid, const std::vector<std::string> & write_values) {
     TransItem *titem;
 
+    TransactionTid::type new_tid, old_tid;
+    do {
+        old_tid = Transaction::_TID;
+        new_tid = std::max(old_tid, (uint64_t) tid);
+    } while(cmpxchg(&Transaction::_TID, old_tid, new_tid) != old_tid);
+
+    fence();
+
     _lock.lock();
     assert(_tuid_titems.find(tuid) != _tuid_titems.end());
     auto &titems = _tuid_titems[tuid];
@@ -108,18 +120,13 @@ void DistSTOServer::install(const int32_t tuid, const int64_t tid, const std::ve
         titem->owner()->install(*titem, txn);
 	if (titem->needs_unlock())
             titem->owner()->unlock(*titem);
-        titem->owner()->cleanup(*titem, true);
+        if (titem->has_write())
+            titem->owner()->cleanup(*titem, true);
     }
 
     _lock.lock();
     _tuid_titems.erase(tuid);
     _lock.unlock();
-
-    TransactionTid::type new_tid, old_tid;
-    do {
-        old_tid = Transaction::_TID;
-        new_tid = std::max(old_tid, tid + TransactionTid::increment_value);
-    } while(!cmpxchg(&Transaction::_TID, old_tid, new_tid));
 }
 
 // Used to abort a transaction by unlocking modified objects and do some cleanup
@@ -132,8 +139,10 @@ void DistSTOServer::abort(const int32_t tuid) {
 
     for (int i = 0; i < titems.size(); i++) {
         titem = (TransItem *) titems[i].data();
-        titem->owner()->unlock(*titem);
-        titem->owner()->cleanup(*titem, false);
+        if (titem->needs_unlock())
+            titem->owner()->unlock(*titem);
+        if (titem->has_write())
+            titem->owner()->cleanup(*titem, false);
     }
 
     _lock.lock();

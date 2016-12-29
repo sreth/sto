@@ -229,12 +229,12 @@ bool Transaction::try_commit() {
 #if !CONSISTENCY_CHECK
     // commit immediately if read-only transaction with opacity
     // XXX: removed for distributed STO
-    /*
+    
     if (!any_writes_ && !any_nonopaque_) {
         stop(true, nullptr, 0);
         return true;
     }
-    */
+   
 #endif
 
     state_ = s_committing;
@@ -314,9 +314,8 @@ bool Transaction::try_commit() {
     // update version
     assert(!commit_tid_);
     fence(); // fence is sufficient. If we acquired locks (ie. there are local objects),
-             // then we will read _TID > locked objects. Otherwise, we don't
-             // care about the local _TID value.
-    commit_tid_ = std::max(_TID, max_remote_vers);
+             // then we will read _TID >= locked objects.
+    commit_tid_ = std::max(_TID, max_remote_vers) + TransactionTid::increment_value;
 
     first_write_ = writeset[0];
 
@@ -389,7 +388,17 @@ bool Transaction::try_commit() {
             goto abort_remote;
         }
     }
-    // fence();
+    fence();
+
+   
+    // update local TID based on the committed TID
+    TransactionTid::type new_tid, old_tid;
+    do {
+        old_tid = _TID;
+        new_tid = std::max(old_tid, commit_tid_);
+    } while(cmpxchg(&_TID, old_tid, new_tid) != old_tid);
+  
+    fence();
 
     //phase3
 #if STO_SORT_WRITESET
@@ -429,17 +438,9 @@ bool Transaction::try_commit() {
         TThread::client(server)->install(tuid, commit_tid_, write_values);
     }
 
-    // update local TID based on the committed TID
-    // technically don't need to do this if no local objects are updated
-    TransactionTid::type new_tid, old_tid;
-    do {
-        old_tid = _TID;
-        new_tid = std::max(old_tid, commit_tid_ + TransactionTid::increment_value);
-    } while(!cmpxchg(&_TID, old_tid, new_tid));
 
 #endif
 
-    // fence();
     stop(true, writeset, nwriteset);
     return true;
 
@@ -550,7 +551,6 @@ std::ostream& operator<<(std::ostream& w, const TransactionGuard& txn) {
 __thread std::vector<boost::shared_ptr<DistSTOClient>> * TThread::clients = nullptr;
 __thread std::vector<boost::shared_ptr<TTransport>> * TThread::transports = nullptr;
 __thread int64_t TThread::_version = 0;
-
 int Sto::total_servers = 0;
 DistSTOServer* Sto::server = nullptr;
 

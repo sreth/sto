@@ -10,7 +10,7 @@ using namespace std::chrono;
 
 // Measure average execution time of transmit with different data sizes
 void*  measure_latency_with_diff_data_sizes(void *) {
-    int num_tries = 100;
+    int num_tries = 10;
     int64_t version = Sto::server->version();
     TThread::init(0, version);
     Sto::server->wait(2);
@@ -18,14 +18,17 @@ void*  measure_latency_with_diff_data_sizes(void *) {
         int size = sizeof(data_size) / sizeof(data_size[0]);
     	for (int i = 0; i < size; i++) {
             std::string data(data_size[i], 'a');
+            for (int j = 0; j < num_tries; j++) {
             // time the average execution time of transmit
             high_resolution_clock::time_point t1 = high_resolution_clock::now();
-            for (int j = 0; j < num_tries; j++) {
+            //for (int j = 0; j < num_tries; j++) {
                 TThread::client(0)->transmit(data);
-            }
+            //}
 	    high_resolution_clock::time_point t2 = high_resolution_clock::now();
-	    auto duration = duration_cast<microseconds>( t2 - t1 ).count() / num_tries;
+	    auto duration = duration_cast<microseconds>( t2 - t1 ).count();
             std::cout << "Data of length " << data_size[i] << " bytes takes " << duration << " microseconds\n";
+            }
+ 
         }
     }
     Sto::server->wait(2);

@@ -35,7 +35,7 @@ class TThread {
 
     // used for testing
     static __thread int64_t _version;
-
+    
     // -------------------------------------
 
 public:
