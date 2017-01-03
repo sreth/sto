@@ -553,6 +553,7 @@ __thread std::vector<boost::shared_ptr<TTransport>> * TThread::transports = null
 __thread int64_t TThread::_version = 0;
 int Sto::total_servers = 0;
 DistSTOServer* Sto::server = nullptr;
+std::unordered_map<TObject*, int> DistSTOServer::obj_owner = std::unordered_map<TObject*, int>();
 
 void* runServer(void *server) {
     ((DistSTOServer *) server)->serve();

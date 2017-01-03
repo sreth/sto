@@ -38,6 +38,8 @@ private:
     int _nthreads;
 
 public:
+    static std::unordered_map<TObject*, int> obj_owner;
+
     DistSTOServer(int id, int port) {
         // Currently we can have at most 4 servers, need to change later
         assert( id >= 0 && id < 4);
@@ -88,9 +90,16 @@ public:
     }
 
     // return the server id that owns the object
+/*
     static int obj_reside_on(TObject *obj) {
         return hash((uint64_t) obj) % Sto::total_servers;
     }
+*/
+
+    static int obj_reside_on(TObject *obj) {
+        return obj_owner.find(obj)->second;
+    }
+
 
     static int obj_reside_on(const TObject *obj) {
         return obj_reside_on(const_cast<TObject*>(obj));
