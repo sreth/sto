@@ -887,7 +887,8 @@ inline TransProxy& TransProxy::observe(TVersion version, bool add_read) {
     assert(!has_stash());
     if (version.is_locked_elsewhere(t()->threadid_))
         t()->abort_because(item(), "locked", version.value());
-    t()->check_opacity(item(), version.value());
+    // XXX: Distributed STO
+    // t()->check_opacity(item(), version.value());
     if (add_read && !has_read()) {
         item().__or_flags(TransItem::read_bit);
         item().rdata_ = Packer<TVersion>::pack(t()->buf_, std::move(version));

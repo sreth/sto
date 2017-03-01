@@ -23,7 +23,7 @@ class DistSTOIf {
   virtual ~DistSTOIf() {}
   virtual void notify() = 0;
   virtual void advance() = 0;
-  virtual void transmit(const std::string& data) = 0;
+  virtual int64_t transmit(const std::string& data) = 0;
   virtual void do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs) = 0;
   virtual int64_t lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) = 0;
   virtual bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) = 0;
@@ -64,8 +64,9 @@ class DistSTONull : virtual public DistSTOIf {
   void advance() {
     return;
   }
-  void transmit(const std::string& /* data */) {
-    return;
+  int64_t transmit(const std::string& /* data */) {
+    int64_t _return = 0;
+    return _return;
   }
   void do_rpc(DoRpcResponse& /* _return */, const int64_t /* objid */, const int64_t /* op */, const std::vector<std::string> & /* opargs */) {
     return;
@@ -283,19 +284,30 @@ class DistSTO_transmit_pargs {
 
 };
 
+typedef struct _DistSTO_transmit_result__isset {
+  _DistSTO_transmit_result__isset() : success(false) {}
+  bool success :1;
+} _DistSTO_transmit_result__isset;
 
 class DistSTO_transmit_result {
  public:
 
   DistSTO_transmit_result(const DistSTO_transmit_result&);
   DistSTO_transmit_result& operator=(const DistSTO_transmit_result&);
-  DistSTO_transmit_result() {
+  DistSTO_transmit_result() : success(0) {
   }
 
   virtual ~DistSTO_transmit_result() throw();
+  int64_t success;
 
-  bool operator == (const DistSTO_transmit_result & /* rhs */) const
+  _DistSTO_transmit_result__isset __isset;
+
+  void __set_success(const int64_t val);
+
+  bool operator == (const DistSTO_transmit_result & rhs) const
   {
+    if (!(success == rhs.success))
+      return false;
     return true;
   }
   bool operator != (const DistSTO_transmit_result &rhs) const {
@@ -309,12 +321,19 @@ class DistSTO_transmit_result {
 
 };
 
+typedef struct _DistSTO_transmit_presult__isset {
+  _DistSTO_transmit_presult__isset() : success(false) {}
+  bool success :1;
+} _DistSTO_transmit_presult__isset;
 
 class DistSTO_transmit_presult {
  public:
 
 
   virtual ~DistSTO_transmit_presult() throw();
+  int64_t* success;
+
+  _DistSTO_transmit_presult__isset __isset;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
 
@@ -905,9 +924,9 @@ class DistSTOClient : virtual public DistSTOIf {
   void advance();
   void send_advance();
   void recv_advance();
-  void transmit(const std::string& data);
+  int64_t transmit(const std::string& data);
   void send_transmit(const std::string& data);
-  void recv_transmit();
+  int64_t recv_transmit();
   void do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
   void send_do_rpc(const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
   void recv_do_rpc(DoRpcResponse& _return);
@@ -1003,13 +1022,13 @@ class DistSTOMultiface : virtual public DistSTOIf {
     ifaces_[i]->advance();
   }
 
-  void transmit(const std::string& data) {
+  int64_t transmit(const std::string& data) {
     size_t sz = ifaces_.size();
     size_t i = 0;
     for (; i < (sz - 1); ++i) {
       ifaces_[i]->transmit(data);
     }
-    ifaces_[i]->transmit(data);
+    return ifaces_[i]->transmit(data);
   }
 
   void do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs) {
@@ -1094,9 +1113,9 @@ class DistSTOConcurrentClient : virtual public DistSTOIf {
   void advance();
   int32_t send_advance();
   void recv_advance(const int32_t seqid);
-  void transmit(const std::string& data);
+  int64_t transmit(const std::string& data);
   int32_t send_transmit(const std::string& data);
-  void recv_transmit(const int32_t seqid);
+  int64_t recv_transmit(const int32_t seqid);
   void do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
   int32_t send_do_rpc(const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
   void recv_do_rpc(DoRpcResponse& _return, const int32_t seqid);

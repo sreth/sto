@@ -381,7 +381,20 @@ uint32_t DistSTO_transmit_result::read(::apache::thrift::protocol::TProtocol* ip
     if (ftype == ::apache::thrift::protocol::T_STOP) {
       break;
     }
-    xfer += iprot->skip(ftype);
+    switch (fid)
+    {
+      case 0:
+        if (ftype == ::apache::thrift::protocol::T_I64) {
+          xfer += iprot->readI64(this->success);
+          this->__isset.success = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
     xfer += iprot->readFieldEnd();
   }
 
@@ -396,6 +409,11 @@ uint32_t DistSTO_transmit_result::write(::apache::thrift::protocol::TProtocol* o
 
   xfer += oprot->writeStructBegin("DistSTO_transmit_result");
 
+  if (this->__isset.success) {
+    xfer += oprot->writeFieldBegin("success", ::apache::thrift::protocol::T_I64, 0);
+    xfer += oprot->writeI64(this->success);
+    xfer += oprot->writeFieldEnd();
+  }
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
   return xfer;
@@ -425,7 +443,20 @@ uint32_t DistSTO_transmit_presult::read(::apache::thrift::protocol::TProtocol* i
     if (ftype == ::apache::thrift::protocol::T_STOP) {
       break;
     }
-    xfer += iprot->skip(ftype);
+    switch (fid)
+    {
+      case 0:
+        if (ftype == ::apache::thrift::protocol::T_I64) {
+          xfer += iprot->readI64((*(this->success)));
+          this->__isset.success = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
     xfer += iprot->readFieldEnd();
   }
 
@@ -1739,10 +1770,10 @@ void DistSTOClient::recv_advance()
   return;
 }
 
-void DistSTOClient::transmit(const std::string& data)
+int64_t DistSTOClient::transmit(const std::string& data)
 {
   send_transmit(data);
-  recv_transmit();
+  return recv_transmit();
 }
 
 void DistSTOClient::send_transmit(const std::string& data)
@@ -1759,7 +1790,7 @@ void DistSTOClient::send_transmit(const std::string& data)
   oprot_->getTransport()->flush();
 }
 
-void DistSTOClient::recv_transmit()
+int64_t DistSTOClient::recv_transmit()
 {
 
   int32_t rseqid = 0;
@@ -1784,12 +1815,17 @@ void DistSTOClient::recv_transmit()
     iprot_->readMessageEnd();
     iprot_->getTransport()->readEnd();
   }
+  int64_t _return;
   DistSTO_transmit_presult result;
+  result.success = &_return;
   result.read(iprot_);
   iprot_->readMessageEnd();
   iprot_->getTransport()->readEnd();
 
-  return;
+  if (result.__isset.success) {
+    return _return;
+  }
+  throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "transmit failed: unknown result");
 }
 
 void DistSTOClient::do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs)
@@ -2230,7 +2266,8 @@ void DistSTOProcessor::process_transmit(int32_t seqid, ::apache::thrift::protoco
 
   DistSTO_transmit_result result;
   try {
-    iface_->transmit(args.data);
+    result.success = iface_->transmit(args.data);
+    result.__isset.success = true;
   } catch (const std::exception& e) {
     if (this->eventHandler_.get() != NULL) {
       this->eventHandler_->handlerError(ctx, "DistSTO.transmit");
@@ -2689,10 +2726,10 @@ void DistSTOConcurrentClient::recv_advance(const int32_t seqid)
   } // end while(true)
 }
 
-void DistSTOConcurrentClient::transmit(const std::string& data)
+int64_t DistSTOConcurrentClient::transmit(const std::string& data)
 {
   int32_t seqid = send_transmit(data);
-  recv_transmit(seqid);
+  return recv_transmit(seqid);
 }
 
 int32_t DistSTOConcurrentClient::send_transmit(const std::string& data)
@@ -2713,7 +2750,7 @@ int32_t DistSTOConcurrentClient::send_transmit(const std::string& data)
   return cseqid;
 }
 
-void DistSTOConcurrentClient::recv_transmit(const int32_t seqid)
+int64_t DistSTOConcurrentClient::recv_transmit(const int32_t seqid)
 {
 
   int32_t rseqid = 0;
@@ -2751,13 +2788,19 @@ void DistSTOConcurrentClient::recv_transmit(const int32_t seqid)
         using ::apache::thrift::protocol::TProtocolException;
         throw TProtocolException(TProtocolException::INVALID_DATA);
       }
+      int64_t _return;
       DistSTO_transmit_presult result;
+      result.success = &_return;
       result.read(iprot_);
       iprot_->readMessageEnd();
       iprot_->getTransport()->readEnd();
 
-      sentry.commit();
-      return;
+      if (result.__isset.success) {
+        sentry.commit();
+        return _return;
+      }
+      // in a bad state, don't commit
+      throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "transmit failed: unknown result");
     }
     // seqid != rseqid
     this->sync_.updatePending(fname, mtype, rseqid);

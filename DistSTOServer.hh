@@ -100,7 +100,6 @@ public:
         return obj_owner.find(obj)->second;
     }
 
-
     static int obj_reside_on(const TObject *obj) {
         return obj_reside_on(const_cast<TObject*>(obj));
     }
@@ -132,6 +131,6 @@ public:
 
     void wait(int total_threads);
 
-    void transmit(const std::string& data);
+    int64_t transmit(const std::string& data);
 };
 

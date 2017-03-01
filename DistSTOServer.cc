@@ -133,7 +133,10 @@ void DistSTOServer::install(const int32_t tuid, const int64_t tid, const std::ve
 void DistSTOServer::abort(const int32_t tuid) {
     TransItem *titem;
     _lock.lock();
-    assert(_tuid_titems.find(tuid) != _tuid_titems.end());
+    if (_tuid_titems.find(tuid) == _tuid_titems.end()) {
+        _lock.unlock();
+        return;
+    }
     auto &titems = _tuid_titems[tuid];
     _lock.unlock();
 
@@ -273,5 +276,6 @@ void DistSTOServer::wait(int total_threads) {
 }
 
 // Echo the data back to the client
-void DistSTOServer::transmit(const std::string& data) {
+int64_t DistSTOServer::transmit(const std::string& data) {
+    return 1;
 }
