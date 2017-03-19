@@ -69,7 +69,7 @@ ifeq ($(PROFILE),1)
 OPTFLAGS += -g -pg -fno-inline
 endif
 
-PROGRAMS = concurrent singleelems list1 vector pqueue rbtree trans_test ht_mt pqVsIt iterators single predicates ex-counter dist-tbox-test dist-many-tboxes-test dist-sto-test $(UNIT_PROGRAMS)
+PROGRAMS = concurrent singleelems list1 vector pqueue rbtree trans_test ht_mt pqVsIt iterators single predicates ex-counter dist-tbox-test dist-tbox-throughput-test dist-many-tboxes-test dist-sto-latency-test dist-sto-conflict-test dist-masstrans-single-test $(UNIT_PROGRAMS)
 UNIT_PROGRAMS = unit-tarray unit-tintpredicate unit-tcounter unit-tbox unit-dist-tbox unit-tgeneric unit-rcu unit-tvector unit-tvector-nopred
 
 all: $(PROGRAMS)
@@ -128,10 +128,19 @@ ex-counter: ex-counter.o $(STO_DEPS)
 dist-tbox-test: dist-tbox-test.o $(STO_DEPS)
 	$(CXX) $(CXXFLAGS) $(OPTFLAGS) -o $@ $< $(STO_OBJS) $(LDFLAGS) $(LIBS)
 
+dist-tbox-throughput-test: dist-tbox-throughput-test.o $(STO_DEPS)
+	$(CXX) $(CXXFLAGS) $(OPTFLAGS) -o $@ $< $(STO_OBJS) $(LDFLAGS) $(LIBS)
+
 dist-many-tboxes-test: dist-many-tboxes-test.o $(STO_DEPS)
 	$(CXX) $(CXXFLAGS) $(OPTFLAGS) -o $@ $< $(STO_OBJS) $(LDFLAGS) $(LIBS)
 
-dist-sto-test: dist-sto-test.o $(STO_DEPS)
+dist-sto-latency-test: dist-sto-latency-test.o $(STO_DEPS)
+	$(CXX) $(CXXFLAGS) $(OPTFLAGS) -o $@ $< $(STO_OBJS) $(LDFLAGS) $(LIBS)
+
+dist-sto-conflict-test: dist-sto-conflict-test.o $(STO_DEPS)
+	$(CXX) $(CXXFLAGS) $(OPTFLAGS) -o $@ $< $(STO_OBJS) $(LDFLAGS) $(LIBS)
+
+dist-masstrans-single-test: dist-masstrans-single-test.o $(STO_DEPS)
 	$(CXX) $(CXXFLAGS) $(OPTFLAGS) -o $@ $< $(STO_OBJS) $(LDFLAGS) $(LIBS)
 
 unit-rcu: unit-rcu.o $(STO_DEPS)

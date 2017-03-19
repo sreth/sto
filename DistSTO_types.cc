@@ -30,6 +30,14 @@ void DoRpcResponse::__set_value(const std::string& val) {
   this->value = val;
 }
 
+void DoRpcResponse::__set_found(const bool val) {
+  this->found = val;
+}
+
+void DoRpcResponse::__set_key(const int64_t val) {
+  this->key = val;
+}
+
 uint32_t DoRpcResponse::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   apache::thrift::protocol::TInputRecursionTracker tracker(*iprot);
@@ -45,6 +53,8 @@ uint32_t DoRpcResponse::read(::apache::thrift::protocol::TProtocol* iprot) {
   bool isset_success = false;
   bool isset_version = false;
   bool isset_value = false;
+  bool isset_found = false;
+  bool isset_key = false;
 
   while (true)
   {
@@ -78,6 +88,22 @@ uint32_t DoRpcResponse::read(::apache::thrift::protocol::TProtocol* iprot) {
           xfer += iprot->skip(ftype);
         }
         break;
+      case 4:
+        if (ftype == ::apache::thrift::protocol::T_BOOL) {
+          xfer += iprot->readBool(this->found);
+          isset_found = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      case 5:
+        if (ftype == ::apache::thrift::protocol::T_I64) {
+          xfer += iprot->readI64(this->key);
+          isset_key = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
       default:
         xfer += iprot->skip(ftype);
         break;
@@ -92,6 +118,10 @@ uint32_t DoRpcResponse::read(::apache::thrift::protocol::TProtocol* iprot) {
   if (!isset_version)
     throw TProtocolException(TProtocolException::INVALID_DATA);
   if (!isset_value)
+    throw TProtocolException(TProtocolException::INVALID_DATA);
+  if (!isset_found)
+    throw TProtocolException(TProtocolException::INVALID_DATA);
+  if (!isset_key)
     throw TProtocolException(TProtocolException::INVALID_DATA);
   return xfer;
 }
@@ -113,6 +143,14 @@ uint32_t DoRpcResponse::write(::apache::thrift::protocol::TProtocol* oprot) cons
   xfer += oprot->writeBinary(this->value);
   xfer += oprot->writeFieldEnd();
 
+  xfer += oprot->writeFieldBegin("found", ::apache::thrift::protocol::T_BOOL, 4);
+  xfer += oprot->writeBool(this->found);
+  xfer += oprot->writeFieldEnd();
+
+  xfer += oprot->writeFieldBegin("key", ::apache::thrift::protocol::T_I64, 5);
+  xfer += oprot->writeI64(this->key);
+  xfer += oprot->writeFieldEnd();
+
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
   return xfer;
@@ -123,17 +161,23 @@ void swap(DoRpcResponse &a, DoRpcResponse &b) {
   swap(a.success, b.success);
   swap(a.version, b.version);
   swap(a.value, b.value);
+  swap(a.found, b.found);
+  swap(a.key, b.key);
 }
 
 DoRpcResponse::DoRpcResponse(const DoRpcResponse& other0) {
   success = other0.success;
   version = other0.version;
   value = other0.value;
+  found = other0.found;
+  key = other0.key;
 }
 DoRpcResponse& DoRpcResponse::operator=(const DoRpcResponse& other1) {
   success = other1.success;
   version = other1.version;
   value = other1.value;
+  found = other1.found;
+  key = other1.key;
   return *this;
 }
 void DoRpcResponse::printTo(std::ostream& out) const {
@@ -142,6 +186,8 @@ void DoRpcResponse::printTo(std::ostream& out) const {
   out << "success=" << to_string(success);
   out << ", " << "version=" << to_string(version);
   out << ", " << "value=" << to_string(value);
+  out << ", " << "found=" << to_string(found);
+  out << ", " << "key=" << to_string(key);
   out << ")";
 }
 

@@ -10,7 +10,7 @@
 
 void DistSTOServer::do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs) {
     TObject &obj = *((TObject *) objid);
-    _return.success = obj.do_rpc(op, opargs, _return.version, _return.value);
+    obj.do_rpc(op, opargs, _return);
 }
 
 // Phase 1

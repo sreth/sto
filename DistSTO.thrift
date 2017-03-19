@@ -2,6 +2,8 @@ struct DoRpcResponse {
     1: required bool success;
     2: required i64 version;
     3: required binary value;
+    4: required bool found;
+    5: required i64 key;
 }
 
 service DistSTO {

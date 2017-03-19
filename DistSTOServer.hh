@@ -90,15 +90,15 @@ public:
     }
 
     // return the server id that owns the object
-/*
     static int obj_reside_on(TObject *obj) {
         return hash((uint64_t) obj) % Sto::total_servers;
     }
-*/
 
+/*
     static int obj_reside_on(TObject *obj) {
         return obj_owner.find(obj)->second;
     }
+*/
 
     static int obj_reside_on(const TObject *obj) {
         return obj_reside_on(const_cast<TObject*>(obj));
@@ -106,10 +106,13 @@ public:
 
     // determines if the object is local
     bool is_local_obj(TObject *obj) {
-        return obj_reside_on(obj) == _id;
+        // return obj_reside_on(obj) == _id;
+	return true;
     }
+
     bool is_local_obj(const TObject *obj) {
-        return obj_reside_on(obj) == _id;
+        // return obj_reside_on(obj) == _id;
+	return true;
     }
 
     void do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);

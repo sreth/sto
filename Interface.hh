@@ -633,8 +633,8 @@ public:
     }
 
     // Distributed STO
-    virtual bool do_rpc(int64_t op, const std::vector<std::string> &opargs, int64_t &version, std::string &value) {
-        (void) op, (void) opargs, (void) version, (void) value;
+    virtual void do_rpc(int64_t op, const std::vector<std::string> &opargs, DoRpcResponse& response) { // bool &found, int64_t &version, std::string &value) {
+        (void) op, (void) opargs, (void) response; // (void) version, (void) value;
     }
     virtual std::string get_write_value(TransItem& item) {
         return std::string();
@@ -643,6 +643,10 @@ public:
         (void) item;
     }
     virtual void print(std::ostream& w, const TransItem& item) const;
+
+    static const int READ_OP = 0;
+    static const int TRANSGET_OP = 1;
+    static const int TRANSDELETE_OP = 2;
 };
 
 typedef TObject Shared;

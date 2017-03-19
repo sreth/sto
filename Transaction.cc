@@ -284,37 +284,6 @@ bool Transaction::try_commit() {
         }
     }
 
-/*
-    // make lock RPC calls to remote servers
-    for (auto iter = server_write_titems_map.begin();
-              iter != server_write_titems_map.end();
-              ++iter) {
-        auto server = iter->first;
-        auto titems = iter->second;
-        std::vector<std::string> str_titems;
-        std::vector<bool> preceding_duplicate_read_;
-        for (auto titem : titems) {
-            str_titems.push_back(std::move(titem->to_string()));
-            if (titem->has_read())
-                preceding_duplicate_read_.push_back(preceding_duplicate_read(titem));
-        }
-
-        // XXX should do this parallel 
-        int64_t version = TThread::client(server)->lock(tuid, str_titems, may_duplicate_items_, preceding_duplicate_read_);
-        if (version < 0) {
-            for (auto iter2 = server_write_titems_map.begin();
-                      iter2 != iter;
-                      ++iter2) {
-                auto server = iter2->first;
-                TThread::client(server)->abort(tuid);
-            }
-            goto abort;
-        }
-        max_remote_vers = std::max(max_remote_vers, (uint64_t) version);
-    }
-*/
-
-
     // make lock RPC calls to remote servers
     for (auto server_titems : server_write_titems_map) {
         auto server = server_titems.first;
@@ -403,27 +372,6 @@ bool Transaction::try_commit() {
         }
     }
 
-
-/*
-    // make check RPC calls to remote servers
-    for (auto server_read_titems : server_read_titems_map) {
-        auto server = server_read_titems.first;
-        auto titems = server_read_titems.second;
-        std::vector<std::string> str_titems;
-        std::vector<bool> preceding_duplicate_read_;
-        for (auto titem: titems) {
-            str_titems.push_back(std::move(titem->to_string()));
-            preceding_duplicate_read_.push_back(preceding_duplicate_read(titem));
-        }
-
-        // XXX: should do this parallel 
-        if (!TThread::client(server)->check(tuid, str_titems, may_duplicate_items_, preceding_duplicate_read_)) {
-            goto abort_remote;
-        }
-    }
-*/
-
-
     // make check RPC calls to remote servers
     for (auto server_titems : server_read_titems_map) {
         auto server = server_titems.first;
@@ -484,21 +432,6 @@ bool Transaction::try_commit() {
            }
         }
     }
-
-/*
-    // make install RPC calls to remote servers
-    for (auto server_write_titems : server_write_titems_map) {
-        auto server = server_write_titems.first;
-        auto titems = server_write_titems.second;
-        std::vector<std::string> write_values;
-        for (auto titem: titems) {
-            write_values.push_back(titem->owner()->get_write_value(*titem));
-        }
-        // XXX should do this parallel 
-        TThread::client(server)->install(tuid, commit_tid_, write_values);
-    }
-*/
-
 
     // make install RPC calls to remote servers
     for (auto server_titems : server_write_titems_map) {

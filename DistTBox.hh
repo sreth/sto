@@ -17,16 +17,14 @@ public:
         : v_(std::forward<Args>(args)...) {
     }
 
-    static const int READ_OP = 0;
-
-    bool do_rpc(int64_t op, const std::vector<std::string> &opargs, int64_t &version, std::string &value) {
+    void do_rpc(int64_t op, const std::vector<std::string> &opargs, DoRpcResponse& response) {// bool &found, int64_t &version, std::string &value) {
         switch(op) {
         case READ_OP:
             {
                 // arguments: none
                 // allocate space in return buffer
-                value.resize(sizeof(T));
-                T &obj = *(T *) (value.data());
+                response.value.resize(sizeof(T));
+                T &obj = *(T *) (response.value.data());
 
                 // TODO: we need to change TWrapped / TransProxy to not use a transaction,
                 // so that we can use the usual read() method instead of this loop
@@ -39,11 +37,13 @@ public:
                     v2 = vers_;
                     if (v2.is_locked()) {
                         // abort if the object is locked instead of blocking
-                        return false;
+			response.success = false;
+                        return;
                     }
                     if (v1 == v2) {
-                        version = (int64_t) v1.value();
-                        return true;
+                        response.version = (int64_t) v1.value();
+			response.success = true;
+                        return;
                     }
                     relax_fence();
                 }
@@ -51,7 +51,8 @@ public:
                 break;
             }
         }
-        return false;
+	response.success = false;
+        return;
     }
 
     read_type read() const {

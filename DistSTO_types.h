@@ -27,19 +27,25 @@ class DoRpcResponse {
 
   DoRpcResponse(const DoRpcResponse&);
   DoRpcResponse& operator=(const DoRpcResponse&);
-  DoRpcResponse() : success(0), version(0), value() {
+  DoRpcResponse() : success(0), version(0), value(), found(0), key(0) {
   }
 
   virtual ~DoRpcResponse() throw();
   bool success;
   int64_t version;
   std::string value;
+  bool found;
+  int64_t key;
 
   void __set_success(const bool val);
 
   void __set_version(const int64_t val);
 
   void __set_value(const std::string& val);
+
+  void __set_found(const bool val);
+
+  void __set_key(const int64_t val);
 
   bool operator == (const DoRpcResponse & rhs) const
   {
@@ -48,6 +54,10 @@ class DoRpcResponse {
     if (!(version == rhs.version))
       return false;
     if (!(value == rhs.value))
+      return false;
+    if (!(found == rhs.found))
+      return false;
+    if (!(key == rhs.key))
       return false;
     return true;
   }
