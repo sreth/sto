@@ -172,62 +172,73 @@ public:
 	  resp.version = (int64_t) lp.full_version_value();
         }
       }
+      case TRANSWRITE_OP:
+      {
+
+      }
     }
   }
 
+private:
+  template <typename ValType>
+  bool remote_transGet(Str key, ValType& retval, threadinfo_type& ti = mythreadinfo) {
+    versioned_value *e;
+    DoRpcResponse resp;
+    std::vector<std::string> args;
+    args.push_back(key);
+    int server = Sto::server->obj_reside_on(this);
+    TThread::client(server)->do_rpc(resp, (int64_t) (TObject *) this, TRANSGET_OP, args);
+    if (resp.found) {
+      e = (versioned_value *) resp.key;
+      auto item = t_read_only_item(e);
+      Version vers = (Version) resp.version;
+      ValType val = *(ValType *) (resp.value.data());
+      if (!(likely(!(vers & invalid_bit)) || has_insert(item))) {
+	Sto::abort();
+        return false;
+      }
+#if READ_MY_WRITES
+      if (has_delete(item)) {
+        return false;
+      }
+      if (item.has_write()) {
+        // read directly from the element if we're inserting it
+        if (has_insert(item)) {
+          assign_val(retval, val);
+        } else {
+	  retval = item.template write_value<write_value_type>();
+        }
+        return true;
+      }
+#endif
+      if (!resp.success)
+	Sto::abort();
+      retval = val;
+      item.observe(tversion_type(vers));
+    } else {
+      e = (versioned_value *) resp.key;
+      auto item = t_read_only_item(e);
+      Version v = (Version) resp.version;
+      if (Opacity)
+        item.add_read_opaque(v);
+      else
+        item.add_read(v);
+    }
+    return resp.found;
+  }
+
+public:
   template <typename ValType>
   bool transGet(Str key, ValType& retval, threadinfo_type& ti = mythreadinfo) {
-      versioned_value *e;
-//    if (!Sto::server->is_local_obj(this)) {
-      DoRpcResponse resp;
-      std::vector<std::string> args;
-      args.push_back(key);
-      int server = Sto::server->obj_reside_on(this);
-      TThread::client(server)->do_rpc(resp, (int64_t) (TObject *) this, TRANSGET_OP, args);
-      if (resp.found) {
-        e = (versioned_value *) resp.key;
-        auto item = t_read_only_item(e);
-	Version vers = (Version) resp.version;
-	ValType val = *(ValType *) (resp.value.data());
-        if (!(likely(!(vers & invalid_bit)) || has_insert(item))) {
-	  Sto::abort();
-          return false;
-        }
-#if READ_MY_WRITES
-        if (has_delete(item)) {
-          return false;
-        }
-        if (item.has_write()) {
-          // read directly from the element if we're inserting it
-          if (has_insert(item)) {
-	    assign_val(retval, val);
-          } else {
-	    retval = item.template write_value<write_value_type>();
-          }
-          return true;
-        }
-#endif
-        if (!resp.success)
-	  Sto::abort();
-	retval = val;
-	item.observe(tversion_type(vers));
-      } else {
-        e = (versioned_value *) resp.key;
-	auto item = t_read_only_item(e);
-	Version v = (Version) resp.version;
-        if (Opacity)
-          item.add_read_opaque(v);
-        else
-          item.add_read(v);
-      }
-      return resp.found;
-//    }
+//  if (!Sto::server->is_local_obj(this)) {
+      return remote_transGet<ValType>(key, retval, ti);
+//  }
 
 /*
     unlocked_cursor_type lp(table_, key);
     bool found = lp.find_unlocked(*ti.ti);
     if (found) {
-      e = lp.value();
+      versioned_value *e = lp.value();
       //      __builtin_prefetch(&e->version);
       auto item = t_read_only_item(e);
       if (!validityCheck(item, e)) {
@@ -260,73 +271,79 @@ public:
 */
   }
 
+private:
   template <typename K>
-  bool transDelete(const K& key, threadinfo_type& ti = mythreadinfo) {
+  bool remote_transDelete(const K& key, threadinfo_type& ti = mythreadinfo) {
     versioned_value *e;
     Version v;
     bool valid;
-
-//    if (!Sto::server->is_local_obj(this)) {
-      DoRpcResponse resp;
-      std::vector<std::string> args;
-      args.push_back(key);
-      int server = Sto::server->obj_reside_on(this);
-      TThread::client(server)->do_rpc(resp, (int64_t) (TObject *) this, TRANSDELETE_OP, args);
-      if (resp.found) {
-        e = (versioned_value *) resp.key;
-        v = (Version) resp.version;
-        fence();
-        auto item = t_item(e);
-        valid = !(v & invalid_bit);
+    DoRpcResponse resp;
+    std::vector<std::string> args;
+    args.push_back(key);
+    int server = Sto::server->obj_reside_on(this);
+    TThread::client(server)->do_rpc(resp, (int64_t) (TObject *) this, TRANSDELETE_OP, args);
+    if (resp.found) {
+      e = (versioned_value *) resp.key;
+      v = (Version) resp.version;
+      fence();
+      auto item = t_item(e);
+      valid = !(v & invalid_bit);
 #if READ_MY_WRITES
-        if (!valid && has_insert(item)) {
-          if (has_delete(item)) {
-            // insert-then-delete then delete, so second delete should return false
-            return false;
-          }
-          // otherwise this is an insert-then-delete
-	  // has_insert() is used all over the place so we just keep that flag set
-          item.add_flags(delete_bit);
-          // key is already in write data since this used to be an insert
-          return true;
-        } else 
-#endif
-        if (!valid) {
-          Sto::abort();
-          return false;
-        }
-        assert(valid);
-#if READ_MY_WRITES
-        // already deleted!
+      if (!valid && has_insert(item)) {
         if (has_delete(item)) {
+          // insert-then-delete then delete, so second delete should return false
           return false;
         }
+        // otherwise this is an insert-then-delete
+        // has_insert() is used all over the place so we just keep that flag set
+        item.add_flags(delete_bit);
+        // key is already in write data since this used to be an insert
+        return true;
+      } else 
 #endif
-        item.observe(tversion_type(v));
-        // same as inserts we need to Store (copy) key so we can lookup to remove later
-        item.template add_write<key_write_value_type>(key).add_flags(delete_bit);
-      } else {
-        e = (versioned_value *) resp.key;
-	auto item = t_read_only_item(e);
-	v = (Version) resp.version;
-        if (Opacity)
-          item.add_read_opaque(v);
-        else
-          item.add_read(v);
+      if (!valid) {
+        Sto::abort();
+        return false;
       }
-      return resp.found;
-//    }
+      assert(valid);
+#if READ_MY_WRITES
+      // already deleted!
+      if (has_delete(item)) {
+        return false;
+      }
+#endif
+      item.observe(tversion_type(v));
+      // same as inserts we need to Store (copy) key so we can lookup to remove later
+      item.template add_write<key_write_value_type>(key).add_flags(delete_bit);
+    } else {
+      e = (versioned_value *) resp.key;
+      auto item = t_read_only_item(e);
+      v = (Version) resp.version;
+      if (Opacity)
+        item.add_read_opaque(v);
+      else
+        item.add_read(v);
+    }
+    return resp.found;
+  }
+
+public:
+  template <typename K>
+  bool transDelete(const K& key, threadinfo_type& ti = mythreadinfo) {
+//  if (!Sto::server->is_local_obj(this)) {
+    return remote_transDelete<K>(key, ti); 
+//  }
 
 
 /*
     unlocked_cursor_type lp(table_, key);
     bool found = lp.find_unlocked(*ti.ti);
     if (found) {
-      e = lp.value();
-      v = e->version();
+      versioned_value *e = lp.value();
+      Version v = e->version();
       fence();
       auto item = t_item(e);
-      valid = !(v & invalid_bit);
+      bool valid = !(v & invalid_bit);
 #if READ_MY_WRITES
       if (!valid && has_insert(item)) {
         if (has_delete(item)) {
@@ -362,7 +379,74 @@ public:
 */
   }
 
+/*
+- Put = insert and set
+- Update = set
+- Insert = insert
+*/
+
+/*
 private:
+  template <bool INSERT, bool SET, typename StringType, typename ValueType>
+  bool remote_trans_write(const StringType& key, const ValueType& value, threadinfo_type& ti = mythreadinfo) {
+    // optimization to do an unlocked lookup first
+    if (SET) {
+      unlocked_cursor_type lp(table_, key);
+      bool found = lp.find_unlocked(*ti.ti);
+      if (found) {
+        return handlePutFound<INSERT, SET>(lp.value(), key, value);
+      } else {
+        if (!INSERT) {
+          ensureNotFound(lp.node(), lp.full_version_value());
+          return false;
+        }
+      }
+    }
+
+    cursor_type lp(table_, key);
+    bool found = lp.find_insert(*ti.ti);
+    if (found) {
+      versioned_value *e = lp.value();
+      lp.finish(0, *ti.ti);
+      return handlePutFound<INSERT, SET>(e, key, value);
+    } else {
+      //      auto p = ti.ti->allocate(sizeof(versioned_value), memtag_value);
+      versioned_value* val = (versioned_value*)versioned_value::make(value, invalid_bit);
+      lp.value() = val;
+#if ABORT_ON_WRITE_READ_CONFLICT
+      auto orig_node = lp.node();
+      auto orig_version = lp.previous_full_version_value();
+      auto upd_version = lp.next_full_version_value(1);
+#endif
+      lp.finish(1, *ti.ti);
+      fence();
+
+#if !ABORT_ON_WRITE_READ_CONFLICT
+      auto orig_node = lp.original_node();
+      auto orig_version = lp.original_version_value();
+      auto upd_version = lp.updated_version_value();
+#endif
+
+      if (updateNodeVersion(orig_node, orig_version, upd_version)) {
+        // add any new nodes as a result of splits, etc. to the read/absent set
+#if !ABORT_ON_WRITE_READ_CONFLICT
+        for (auto&& pair : lp.new_nodes()) {
+          auto nodeitem = Sto::new_item(this, tag_inter(pair.first));
+          if (Opacity)
+            nodeitem.add_read_opaque(pair.second);
+          else
+            nodeitem.add_read(pair.second);
+        }
+#endif
+      }
+      auto item = Sto::new_item(this, val);
+      item.template add_write<key_write_value_type>(key).add_flags(insert_bit);
+      return found;
+    }
+  }
+*/
+
+
   template <bool INSERT, bool SET, typename StringType, typename ValueType>
   bool trans_write(const StringType& key, const ValueType& value, threadinfo_type& ti = mythreadinfo) {
     // optimization to do an unlocked lookup first
@@ -420,6 +504,7 @@ private:
       return found;
     }
   }
+
 
 public:
   template <typename KT, typename VT>

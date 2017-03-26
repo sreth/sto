@@ -647,6 +647,7 @@ public:
     static const int READ_OP = 0;
     static const int TRANSGET_OP = 1;
     static const int TRANSDELETE_OP = 2;
+    static const int TRANSWRITE_OP = 3;
 };
 
 typedef TObject Shared;
