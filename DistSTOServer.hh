@@ -115,7 +115,7 @@ public:
 	return true;
     }
 
-    void do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
+    void do_rpc(DoRpcResponse& _return, const DoRpcArgs& opargs);
 
     int64_t lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, 
                  const std::vector<bool> & preceding_duplicate_read_);

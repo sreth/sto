@@ -138,13 +138,13 @@ public:
 #endif
   }
 
-
-  void do_rpc(int64_t op, const std::vector<std::string> &opargs, DoRpcResponse &resp) {
-    switch(op) {
+  void do_rpc(DoRpcResponse &resp, const DoRpcArgs& opargs) {
+    switch(opargs.op) {
       case TRANSGET_OP:
       {
-        threadinfo_type& ti = mythreadinfo; //XXX: ti should be part of opargs
-        Str key = opargs[0];
+        threadinfo_type& ti = *(threadinfo_type*) opargs.strArg1.data();
+        Str key = opargs.strArg2;
+
         unlocked_cursor_type lp(table_, key);
         resp.found = lp.find_unlocked(*ti.ti);
 	if (resp.found) {
@@ -156,38 +156,160 @@ public:
           resp.key = (int64_t) tag_inter(lp.node());
 	  resp.version = (int64_t) lp.full_version_value();
 	}
+        break;
       }
       case TRANSDELETE_OP:
       {
-        threadinfo_type& ti = mythreadinfo; //XXX: ti should be part of opargs
-        Str key = opargs[0];
+        threadinfo_type& ti = *(threadinfo_type*) opargs.strArg1.data();
+        Str key = opargs.strArg2;
+
         unlocked_cursor_type lp(table_, key);
         resp.found = lp.find_unlocked(*ti.ti); 
         if (resp.found) {
           versioned_value *e = lp.value();
           resp.key = (int64_t) e;
-          resp.version = (Version) e->version();
+          resp.version = (int64_t) e->version();
         } else {
           resp.key = (int64_t) tag_inter(lp.node());
 	  resp.version = (int64_t) lp.full_version_value();
         }
+        break;
       }
       case TRANSWRITE_OP:
       {
+        threadinfo_type& ti = *(threadinfo_type*) opargs.strArg1.data(); 
+        Str key = opargs.strArg2; 
+        value_type value = *(value_type*) opargs.strArg3.data(); 
+        bool set = opargs.boolArg1;
+        bool insert = opargs.boolArg2;
 
+        // optimization to do an unlocked lookup first
+        if (set) {
+          unlocked_cursor_type lp(table_, key);
+          resp.found = lp.find_unlocked(*ti.ti);
+          if (resp.found) {
+            versioned_value *e = lp.value();
+            resp.key = (int64_t) e;
+            resp.version = (int64_t) e->version();
+            return;
+          } else {
+            if (!insert) {
+              resp.key = (int64_t) tag_inter(lp.node());
+	      resp.version = (int64_t) lp.full_version_value();
+              return;
+            }
+          }
+        }
+
+        cursor_type lp(table_, key);
+        resp.found = lp.find_insert(*ti.ti);
+        if (resp.found) {
+          versioned_value *e = lp.value();
+          resp.key = (int64_t) e;
+          resp.version = (int64_t) e->version();
+          lp.finish(0, *ti.ti);
+          return;
+        } else {
+          //      auto p = ti.ti->allocate(sizeof(versioned_value), memtag_value);
+          versioned_value* val = (versioned_value*)versioned_value::make(value, invalid_bit);
+          lp.value() = val;
+#if ABORT_ON_WRITE_READ_CONFLICT
+          auto orig_node = lp.node();
+          auto orig_version = lp.previous_full_version_value();
+          auto upd_version = lp.next_full_version_value(1);
+#endif
+          lp.finish(1, *ti.ti);
+          fence();
+
+#if !ABORT_ON_WRITE_READ_CONFLICT
+          auto orig_node = lp.original_node();
+          auto orig_version = lp.original_version_value();
+          auto upd_version = lp.updated_version_value();
+#endif
+          resp.intResp1 = (int64_t) val;
+          resp.key = (int64_t) orig_node;
+          resp.version = (int64_t) orig_version;
+          resp.intResp4 = (int64_t) upd_version;
+          for (auto&& pair : lp.new_nodes()) {
+            resp.intListResp1.push_back((int64_t) tag_inter(pair.first));
+            resp.intListResp2.push_back((int64_t) pair.second);
+          }
+        }
+        break;
       }
+      case REALLYHANDLEPUTFOUND_OP:
+      {
+        threadinfo_type& ti = *(threadinfo_type*) opargs.strArg1.data();
+        Str key = opargs.strArg2; 
+        value_type value = *(value_type*) opargs.strArg3.data(); 
+        bool has_insert = opargs.boolArg1;
+        versioned_value *e = (versioned_value*) opargs.intArg1;
+       
+        // resizing takes a lot of effort, so we first check if we'll need to
+        // (values never shrink in size, so if we don't need to resize, we'll never need to)
+        auto *new_location = e;
+        bool needsResize = e->needsResize(value);
+        if (needsResize) {
+          if (!has_insert) {
+            // TODO: might be faster to do this part at commit time but easiest to just do it now
+            lock(e);
+            // we had a weird race condition and now this element is gone. just abort at this point
+            if (e->version() & invalid_bit) {
+              unlock(e);
+              resp.success = false;
+              return;
+            }
+            e->version() |= invalid_bit;
+            // should be ok to unlock now because any attempted writes will be forced to abort
+            unlock(e);
+          }
+          // does the actual realloc. at this point e is marked invalid so we don't have to worry about
+          // other threads changing e's value
+          new_location = e->resizeIfNeeded(value);
+          // e can't get bigger so this should always be true
+          assert(new_location != e);
+          if (!has_insert) {
+            // copied version is going to be invalid because we just had to mark e invalid
+            new_location->version() &= ~invalid_bit;
+          }
+          cursor_type lp(table_, key);
+          // TODO: not even trying to pass around threadinfo here
+          bool found = lp.find_locked(*ti.ti);
+          (void)found;
+          assert(found);
+          lp.value() = new_location;
+          lp.finish(0, *mythreadinfo.ti);
+          // now rcu free "e"
+          e->deallocate_rcu(*ti.ti);
+        }
+#if READ_MY_WRITES
+        if (has_insert)
+          new_location->set_value(value_type(value));
+#endif
+        resp.success = true;
+        resp.key = (int64_t) new_location;
+        break;
+      }
+
+
+
     }
   }
 
 private:
   template <typename ValType>
-  bool remote_transGet(Str key, ValType& retval, threadinfo_type& ti = mythreadinfo) {
+  bool remote_transGet(Str key, ValType& retval, threadinfo_type& ti) {
     versioned_value *e;
     DoRpcResponse resp;
-    std::vector<std::string> args;
-    args.push_back(key);
+    DoRpcArgs args;
+    args.objid = (int64_t) (TObject *) this;
+    args.op = TRANSGET_OP;
+    args.strArg1.resize(sizeof(threadinfo_type));
+    *(threadinfo_type*) args.strArg1.data() = std::move(ti);
+    args.strArg2 = key;
     int server = Sto::server->obj_reside_on(this);
-    TThread::client(server)->do_rpc(resp, (int64_t) (TObject *) this, TRANSGET_OP, args);
+    TThread::client(server)->do_rpc(resp, args);
+
     if (resp.found) {
       e = (versioned_value *) resp.key;
       auto item = t_read_only_item(e);
@@ -253,6 +375,7 @@ public:
       }
       if (item.has_write()) {
         // read directly from the element if we're inserting it
+
         if (has_insert(item)) {
 	  assign_val(retval, e->read_value());
         } else {
@@ -273,15 +396,20 @@ public:
 
 private:
   template <typename K>
-  bool remote_transDelete(const K& key, threadinfo_type& ti = mythreadinfo) {
+  bool remote_transDelete(const K& key, threadinfo_type& ti) {
     versioned_value *e;
     Version v;
     bool valid;
     DoRpcResponse resp;
-    std::vector<std::string> args;
-    args.push_back(key);
+    DoRpcArgs args;
+    args.objid = (int64_t) (TObject *) this;
+    args.op = TRANSDELETE_OP;
+    args.strArg1.resize(sizeof(threadinfo_type));
+    *(threadinfo_type*) args.strArg1.data() = std::move(ti);
+    args.strArg2 = key;
     int server = Sto::server->obj_reside_on(this);
-    TThread::client(server)->do_rpc(resp, (int64_t) (TObject *) this, TRANSDELETE_OP, args);
+    TThread::client(server)->do_rpc(resp, args);
+
     if (resp.found) {
       e = (versioned_value *) resp.key;
       v = (Version) resp.version;
@@ -385,70 +513,83 @@ public:
 - Insert = insert
 */
 
-/*
+
 private:
   template <bool INSERT, bool SET, typename StringType, typename ValueType>
-  bool remote_trans_write(const StringType& key, const ValueType& value, threadinfo_type& ti = mythreadinfo) {
+  bool remote_trans_write(const StringType& key, const ValueType& value, threadinfo_type& ti) {
+    DoRpcResponse resp;
+    DoRpcArgs args;
+    args.objid = (int64_t) (TObject *) this;
+    args.op = TRANSWRITE_OP;
+    args.strArg2 = key;
+    args.strArg3.resize(sizeof(value_type));
+    *(value_type*) args.strArg3.data() = std::move(value);
+    args.strArg1.resize(sizeof(threadinfo_type));
+    *(threadinfo_type*) args.strArg1.data() = std::move(ti);
+    args.boolArg1 = SET;
+    args.boolArg2 = INSERT; 
+    int server = Sto::server->obj_reside_on(this);
+    TThread::client(server)->do_rpc(resp, args);
+
     // optimization to do an unlocked lookup first
     if (SET) {
-      unlocked_cursor_type lp(table_, key);
-      bool found = lp.find_unlocked(*ti.ti);
-      if (found) {
-        return handlePutFound<INSERT, SET>(lp.value(), key, value);
+      if (resp.found) {
+        versioned_value *e = (versioned_value *) resp.key;
+        Version v = (Version) resp.version;
+        return remote_handlePutFound<INSERT, SET, ValueType>(e, v, key, value);
       } else {
+        // Update key not found
         if (!INSERT) {
-          ensureNotFound(lp.node(), lp.full_version_value());
+          versioned_value *e = (versioned_value *) resp.key;
+          auto item = t_read_only_item(e);
+          Version v = (Version) resp.version;
+          if (Opacity)
+            item.add_read_opaque(v);
+          else
+            item.add_read(v);
           return false;
         }
       }
     }
 
-    cursor_type lp(table_, key);
-    bool found = lp.find_insert(*ti.ti);
-    if (found) {
-      versioned_value *e = lp.value();
-      lp.finish(0, *ti.ti);
-      return handlePutFound<INSERT, SET>(e, key, value);
+    if (resp.found) {
+      versioned_value *e = (versioned_value*) resp.key;
+      Version v = (Version) resp.version;
+      return remote_handlePutFound<INSERT, SET, ValueType>(e, v, key, value);
     } else {
-      //      auto p = ti.ti->allocate(sizeof(versioned_value), memtag_value);
-      versioned_value* val = (versioned_value*)versioned_value::make(value, invalid_bit);
-      lp.value() = val;
-#if ABORT_ON_WRITE_READ_CONFLICT
-      auto orig_node = lp.node();
-      auto orig_version = lp.previous_full_version_value();
-      auto upd_version = lp.next_full_version_value(1);
-#endif
-      lp.finish(1, *ti.ti);
-      fence();
-
-#if !ABORT_ON_WRITE_READ_CONFLICT
-      auto orig_node = lp.original_node();
-      auto orig_version = lp.original_version_value();
-      auto upd_version = lp.updated_version_value();
-#endif
+      versioned_value *val = (versioned_value*) resp.intResp1;
+      versioned_value *orig_node = (versioned_value*) resp.key;
+      Version orig_version = (Version) resp.version; 
+      Version upd_version = (Version) resp.intResp4;
 
       if (updateNodeVersion(orig_node, orig_version, upd_version)) {
         // add any new nodes as a result of splits, etc. to the read/absent set
 #if !ABORT_ON_WRITE_READ_CONFLICT
-        for (auto&& pair : lp.new_nodes()) {
-          auto nodeitem = Sto::new_item(this, tag_inter(pair.first));
+        assert(resp.intListResp1.size() == resp.intListResp2.size());
+        for(std::vector<int64_t>::size_type i = 0; i != resp.intListResp1.size(); i++) {
+          auto nodeitem = Sto::new_item(this, (versioned_value*) resp.intListResp1[i]);
+          Version v = (Version) resp.intListResp2[i];
           if (Opacity)
-            nodeitem.add_read_opaque(pair.second);
+            nodeitem.add_read_opaque(v);
           else
-            nodeitem.add_read(pair.second);
+            nodeitem.add_read(v);
         }
 #endif
       }
+
       auto item = Sto::new_item(this, val);
       item.template add_write<key_write_value_type>(key).add_flags(insert_bit);
-      return found;
+      return resp.found;
     }
   }
-*/
-
 
   template <bool INSERT, bool SET, typename StringType, typename ValueType>
   bool trans_write(const StringType& key, const ValueType& value, threadinfo_type& ti = mythreadinfo) {
+//    if (!Sto::server->is_local_obj(this)) {
+      return remote_trans_write<INSERT, SET, StringType, ValueType>(key, value, ti);
+//    }
+
+/*
     // optimization to do an unlocked lookup first
     if (SET) {
       unlocked_cursor_type lp(table_, key);
@@ -503,8 +644,9 @@ private:
       item.template add_write<key_write_value_type>(key).add_flags(insert_bit);
       return found;
     }
-  }
+*/
 
+  }
 
 public:
   template <typename KT, typename VT>
@@ -836,6 +978,39 @@ protected:
     }
   }
 
+  // called once we've checked our own writes for a found put()
+  template <typename ValueType>
+  void remote_reallyHandlePutFound(TransProxy& item, versioned_value *e, Str key, const ValueType& value) {
+    DoRpcResponse resp;
+    DoRpcArgs args;
+    args.objid = (int64_t) (TObject *) this;
+    args.op = REALLYHANDLEPUTFOUND_OP;
+    args.strArg1.resize(sizeof(threadinfo_type));
+    *(threadinfo_type*) args.strArg1.data() = std::move(mythreadinfo);
+    args.strArg2 = key;
+    args.strArg3.resize(sizeof(value_type));
+    *(value_type*) args.strArg3.data() = std::move(value);
+    args.boolArg1 = has_insert(item);
+    args.intArg1 = (int64_t) e;
+    int server = Sto::server->obj_reside_on(this);
+    TThread::client(server)->do_rpc(resp, args);
+    
+    bool abort = !resp.success;
+    if (abort) {
+      Sto::abort();
+      return;
+    } 
+    versioned_value *new_location = (versioned_value *) resp.key; 
+#if READ_MY_WRITES
+    if (!has_insert(item))
+#endif
+    {
+      if (new_location != e)
+        item = Sto::new_item(this, new_location);
+      item.template add_write<write_value_type>(value);
+    }
+  }
+
   // returns true if already in tree, false otherwise
   // handles a transactional put when the given key is already in the tree
   template <bool INSERT, bool SET, typename ValueType>
@@ -874,6 +1049,43 @@ protected:
     }
     return true;
   }
+
+
+  // returns true if already in tree, false otherwise
+  // handles a transactional put when the given key is already in the tree
+  template <bool INSERT, bool SET, typename ValueType>
+  bool remote_handlePutFound(versioned_value *e, Version v, Str key, const ValueType& value) {
+    auto item = t_item(e);
+    if (!(likely(!(v & invalid_bit)) || has_insert(item))) {
+      Sto::abort();
+      return false;
+    }
+#if READ_MY_WRITES
+    if (has_delete(item)) {
+      // delete-then-insert == update (technically v# would get set to 0, but this doesn't matter
+      // if user can't read v#)
+      if (INSERT) {
+        item.clear_flags(delete_bit);
+        assert(!has_delete(item));
+        remote_reallyHandlePutFound<ValueType>(item, e, key, value);
+      } else {
+        // delete-then-update == not found
+        // delete will check for other deletes so we don't need to re-log that check
+      }
+      return false;
+    }
+    // make sure this item doesn't get deleted (we don't care about other updates to it though)
+    if (!item.has_read() && !has_insert(item))
+#endif
+    {
+      item.observe(tversion_type(v));
+    }
+    if (SET) {
+      remote_reallyHandlePutFound<ValueType>(item, e, key, value);
+    }
+    return true;
+  }
+
 
   template <typename Node, typename Version>
   void ensureNotFound(Node n, Version v) {

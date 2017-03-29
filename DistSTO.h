@@ -24,7 +24,7 @@ class DistSTOIf {
   virtual void notify() = 0;
   virtual void advance() = 0;
   virtual int64_t transmit(const std::string& data) = 0;
-  virtual void do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs) = 0;
+  virtual void do_rpc(DoRpcResponse& _return, const DoRpcArgs& opargs) = 0;
   virtual int64_t lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) = 0;
   virtual bool check(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_) = 0;
   virtual void install(const int32_t tuid, const int64_t tid, const std::vector<std::string> & write_values) = 0;
@@ -68,7 +68,7 @@ class DistSTONull : virtual public DistSTOIf {
     int64_t _return = 0;
     return _return;
   }
-  void do_rpc(DoRpcResponse& /* _return */, const int64_t /* objid */, const int64_t /* op */, const std::vector<std::string> & /* opargs */) {
+  void do_rpc(DoRpcResponse& /* _return */, const DoRpcArgs& /* opargs */) {
     return;
   }
   int64_t lock(const int32_t /* tuid */, const std::vector<std::string> & /* titems */, const bool /* may_duplicate_items_ */, const std::vector<bool> & /* preceding_duplicate_read_ */) {
@@ -340,9 +340,7 @@ class DistSTO_transmit_presult {
 };
 
 typedef struct _DistSTO_do_rpc_args__isset {
-  _DistSTO_do_rpc_args__isset() : objid(false), op(false), opargs(false) {}
-  bool objid :1;
-  bool op :1;
+  _DistSTO_do_rpc_args__isset() : opargs(false) {}
   bool opargs :1;
 } _DistSTO_do_rpc_args__isset;
 
@@ -351,28 +349,18 @@ class DistSTO_do_rpc_args {
 
   DistSTO_do_rpc_args(const DistSTO_do_rpc_args&);
   DistSTO_do_rpc_args& operator=(const DistSTO_do_rpc_args&);
-  DistSTO_do_rpc_args() : objid(0), op(0) {
+  DistSTO_do_rpc_args() {
   }
 
   virtual ~DistSTO_do_rpc_args() throw();
-  int64_t objid;
-  int64_t op;
-  std::vector<std::string>  opargs;
+  DoRpcArgs opargs;
 
   _DistSTO_do_rpc_args__isset __isset;
 
-  void __set_objid(const int64_t val);
-
-  void __set_op(const int64_t val);
-
-  void __set_opargs(const std::vector<std::string> & val);
+  void __set_opargs(const DoRpcArgs& val);
 
   bool operator == (const DistSTO_do_rpc_args & rhs) const
   {
-    if (!(objid == rhs.objid))
-      return false;
-    if (!(op == rhs.op))
-      return false;
     if (!(opargs == rhs.opargs))
       return false;
     return true;
@@ -394,9 +382,7 @@ class DistSTO_do_rpc_pargs {
 
 
   virtual ~DistSTO_do_rpc_pargs() throw();
-  const int64_t* objid;
-  const int64_t* op;
-  const std::vector<std::string> * opargs;
+  const DoRpcArgs* opargs;
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
@@ -927,8 +913,8 @@ class DistSTOClient : virtual public DistSTOIf {
   int64_t transmit(const std::string& data);
   void send_transmit(const std::string& data);
   int64_t recv_transmit();
-  void do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
-  void send_do_rpc(const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
+  void do_rpc(DoRpcResponse& _return, const DoRpcArgs& opargs);
+  void send_do_rpc(const DoRpcArgs& opargs);
   void recv_do_rpc(DoRpcResponse& _return);
   int64_t lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
   void send_lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
@@ -1031,13 +1017,13 @@ class DistSTOMultiface : virtual public DistSTOIf {
     return ifaces_[i]->transmit(data);
   }
 
-  void do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs) {
+  void do_rpc(DoRpcResponse& _return, const DoRpcArgs& opargs) {
     size_t sz = ifaces_.size();
     size_t i = 0;
     for (; i < (sz - 1); ++i) {
-      ifaces_[i]->do_rpc(_return, objid, op, opargs);
+      ifaces_[i]->do_rpc(_return, opargs);
     }
-    ifaces_[i]->do_rpc(_return, objid, op, opargs);
+    ifaces_[i]->do_rpc(_return, opargs);
     return;
   }
 
@@ -1116,8 +1102,8 @@ class DistSTOConcurrentClient : virtual public DistSTOIf {
   int64_t transmit(const std::string& data);
   int32_t send_transmit(const std::string& data);
   int64_t recv_transmit(const int32_t seqid);
-  void do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
-  int32_t send_do_rpc(const int64_t objid, const int64_t op, const std::vector<std::string> & opargs);
+  void do_rpc(DoRpcResponse& _return, const DoRpcArgs& opargs);
+  int32_t send_do_rpc(const DoRpcArgs& opargs);
   void recv_do_rpc(DoRpcResponse& _return, const int32_t seqid);
   int64_t lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);
   int32_t send_lock(const int32_t tuid, const std::vector<std::string> & titems, const bool may_duplicate_items_, const std::vector<bool> & preceding_duplicate_read_);

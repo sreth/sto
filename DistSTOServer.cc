@@ -8,9 +8,9 @@
 #define dprintf(...) printf(__VA_ARGS__)
 // #define dprintf(format, ...)
 
-void DistSTOServer::do_rpc(DoRpcResponse& _return, const int64_t objid, const int64_t op, const std::vector<std::string> & opargs) {
-    TObject &obj = *((TObject *) objid);
-    obj.do_rpc(op, opargs, _return);
+void DistSTOServer::do_rpc(DoRpcResponse& _return, const DoRpcArgs& opargs) {
+    TObject &obj = *((TObject *) opargs.objid);
+    obj.do_rpc(_return, opargs);
 }
 
 // Phase 1

@@ -17,8 +17,8 @@ public:
         : v_(std::forward<Args>(args)...) {
     }
 
-    void do_rpc(int64_t op, const std::vector<std::string> &opargs, DoRpcResponse& response) {// bool &found, int64_t &version, std::string &value) {
-        switch(op) {
+    void do_rpc(DoRpcResponse& response, const DoRpcArgs& opargs) {
+        switch(opargs.op) {
         case READ_OP:
             {
                 // arguments: none
@@ -62,10 +62,12 @@ public:
         } else if (Sto::server->is_local_obj(this)) {
             return v_.read(item, vers_);
         } else {
-            std::vector<std::string> args;
             int server = Sto::server->obj_reside_on(this);
             DoRpcResponse resp;
-            TThread::client(server)->do_rpc(resp, (int64_t) (TObject *) this, READ_OP, args);
+            DoRpcArgs args;
+            args.objid = (int64_t) (TObject *) this;
+            args.op = READ_OP;
+            TThread::client(server)->do_rpc(resp, args);
             if (!resp.success)
                 Sto::abort();
             item.add_read((version_type) resp.version);

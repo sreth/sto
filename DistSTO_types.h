@@ -21,43 +21,65 @@
 
 class DoRpcResponse;
 
+class DoRpcArgs;
+
 
 class DoRpcResponse {
  public:
 
   DoRpcResponse(const DoRpcResponse&);
   DoRpcResponse& operator=(const DoRpcResponse&);
-  DoRpcResponse() : success(0), version(0), value(), found(0), key(0) {
+  DoRpcResponse() : success(0), found(0), intResp1(0), version(0), key(0), intResp4(0), value() {
   }
 
   virtual ~DoRpcResponse() throw();
   bool success;
-  int64_t version;
-  std::string value;
   bool found;
+  int64_t intResp1;
+  int64_t version;
   int64_t key;
+  int64_t intResp4;
+  std::string value;
+  std::vector<int64_t>  intListResp1;
+  std::vector<int64_t>  intListResp2;
 
   void __set_success(const bool val);
 
+  void __set_found(const bool val);
+
+  void __set_intResp1(const int64_t val);
+
   void __set_version(const int64_t val);
+
+  void __set_key(const int64_t val);
+
+  void __set_intResp4(const int64_t val);
 
   void __set_value(const std::string& val);
 
-  void __set_found(const bool val);
+  void __set_intListResp1(const std::vector<int64_t> & val);
 
-  void __set_key(const int64_t val);
+  void __set_intListResp2(const std::vector<int64_t> & val);
 
   bool operator == (const DoRpcResponse & rhs) const
   {
     if (!(success == rhs.success))
       return false;
+    if (!(found == rhs.found))
+      return false;
+    if (!(intResp1 == rhs.intResp1))
+      return false;
     if (!(version == rhs.version))
+      return false;
+    if (!(key == rhs.key))
+      return false;
+    if (!(intResp4 == rhs.intResp4))
       return false;
     if (!(value == rhs.value))
       return false;
-    if (!(found == rhs.found))
+    if (!(intListResp1 == rhs.intListResp1))
       return false;
-    if (!(key == rhs.key))
+    if (!(intListResp2 == rhs.intListResp2))
       return false;
     return true;
   }
@@ -76,6 +98,81 @@ class DoRpcResponse {
 void swap(DoRpcResponse &a, DoRpcResponse &b);
 
 inline std::ostream& operator<<(std::ostream& out, const DoRpcResponse& obj)
+{
+  obj.printTo(out);
+  return out;
+}
+
+
+class DoRpcArgs {
+ public:
+
+  DoRpcArgs(const DoRpcArgs&);
+  DoRpcArgs& operator=(const DoRpcArgs&);
+  DoRpcArgs() : objid(0), op(0), strArg1(), strArg2(), strArg3(), boolArg1(0), boolArg2(0), intArg1(0) {
+  }
+
+  virtual ~DoRpcArgs() throw();
+  int64_t objid;
+  int64_t op;
+  std::string strArg1;
+  std::string strArg2;
+  std::string strArg3;
+  bool boolArg1;
+  bool boolArg2;
+  int64_t intArg1;
+
+  void __set_objid(const int64_t val);
+
+  void __set_op(const int64_t val);
+
+  void __set_strArg1(const std::string& val);
+
+  void __set_strArg2(const std::string& val);
+
+  void __set_strArg3(const std::string& val);
+
+  void __set_boolArg1(const bool val);
+
+  void __set_boolArg2(const bool val);
+
+  void __set_intArg1(const int64_t val);
+
+  bool operator == (const DoRpcArgs & rhs) const
+  {
+    if (!(objid == rhs.objid))
+      return false;
+    if (!(op == rhs.op))
+      return false;
+    if (!(strArg1 == rhs.strArg1))
+      return false;
+    if (!(strArg2 == rhs.strArg2))
+      return false;
+    if (!(strArg3 == rhs.strArg3))
+      return false;
+    if (!(boolArg1 == rhs.boolArg1))
+      return false;
+    if (!(boolArg2 == rhs.boolArg2))
+      return false;
+    if (!(intArg1 == rhs.intArg1))
+      return false;
+    return true;
+  }
+  bool operator != (const DoRpcArgs &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const DoRpcArgs & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+  virtual void printTo(std::ostream& out) const;
+};
+
+void swap(DoRpcArgs &a, DoRpcArgs &b);
+
+inline std::ostream& operator<<(std::ostream& out, const DoRpcArgs& obj)
 {
   obj.printTo(out);
   return out;
