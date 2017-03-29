@@ -29,33 +29,33 @@ class DoRpcResponse {
 
   DoRpcResponse(const DoRpcResponse&);
   DoRpcResponse& operator=(const DoRpcResponse&);
-  DoRpcResponse() : success(0), found(0), intResp1(0), version(0), key(0), intResp4(0), value() {
+  DoRpcResponse() : success(0), boolResp1(0), intResp1(0), intResp2(0), intResp3(0), intResp4(0), strResp1() {
   }
 
   virtual ~DoRpcResponse() throw();
   bool success;
-  bool found;
+  bool boolResp1;
   int64_t intResp1;
-  int64_t version;
-  int64_t key;
+  int64_t intResp2;
+  int64_t intResp3;
   int64_t intResp4;
-  std::string value;
+  std::string strResp1;
   std::vector<int64_t>  intListResp1;
   std::vector<int64_t>  intListResp2;
 
   void __set_success(const bool val);
 
-  void __set_found(const bool val);
+  void __set_boolResp1(const bool val);
 
   void __set_intResp1(const int64_t val);
 
-  void __set_version(const int64_t val);
+  void __set_intResp2(const int64_t val);
 
-  void __set_key(const int64_t val);
+  void __set_intResp3(const int64_t val);
 
   void __set_intResp4(const int64_t val);
 
-  void __set_value(const std::string& val);
+  void __set_strResp1(const std::string& val);
 
   void __set_intListResp1(const std::vector<int64_t> & val);
 
@@ -65,17 +65,17 @@ class DoRpcResponse {
   {
     if (!(success == rhs.success))
       return false;
-    if (!(found == rhs.found))
+    if (!(boolResp1 == rhs.boolResp1))
       return false;
     if (!(intResp1 == rhs.intResp1))
       return false;
-    if (!(version == rhs.version))
+    if (!(intResp2 == rhs.intResp2))
       return false;
-    if (!(key == rhs.key))
+    if (!(intResp3 == rhs.intResp3))
       return false;
     if (!(intResp4 == rhs.intResp4))
       return false;
-    if (!(value == rhs.value))
+    if (!(strResp1 == rhs.strResp1))
       return false;
     if (!(intListResp1 == rhs.intListResp1))
       return false;

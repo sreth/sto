@@ -1,11 +1,11 @@
 struct DoRpcResponse {
     1: required bool success;
-    2: required bool found;
+    2: required bool boolResp1;
     3: required i64 intResp1;
-    4: required i64 version;
-    5: required i64 key;
+    4: required i64 intResp2;
+    5: required i64 intResp3;
     6: required i64 intResp4;
-    7: required binary value;
+    7: required binary strResp1;
     8: required list<i64> intListResp1;
     9: required list<i64> intListResp2;
 }

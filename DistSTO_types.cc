@@ -22,28 +22,28 @@ void DoRpcResponse::__set_success(const bool val) {
   this->success = val;
 }
 
-void DoRpcResponse::__set_found(const bool val) {
-  this->found = val;
+void DoRpcResponse::__set_boolResp1(const bool val) {
+  this->boolResp1 = val;
 }
 
 void DoRpcResponse::__set_intResp1(const int64_t val) {
   this->intResp1 = val;
 }
 
-void DoRpcResponse::__set_version(const int64_t val) {
-  this->version = val;
+void DoRpcResponse::__set_intResp2(const int64_t val) {
+  this->intResp2 = val;
 }
 
-void DoRpcResponse::__set_key(const int64_t val) {
-  this->key = val;
+void DoRpcResponse::__set_intResp3(const int64_t val) {
+  this->intResp3 = val;
 }
 
 void DoRpcResponse::__set_intResp4(const int64_t val) {
   this->intResp4 = val;
 }
 
-void DoRpcResponse::__set_value(const std::string& val) {
-  this->value = val;
+void DoRpcResponse::__set_strResp1(const std::string& val) {
+  this->strResp1 = val;
 }
 
 void DoRpcResponse::__set_intListResp1(const std::vector<int64_t> & val) {
@@ -67,12 +67,12 @@ uint32_t DoRpcResponse::read(::apache::thrift::protocol::TProtocol* iprot) {
   using ::apache::thrift::protocol::TProtocolException;
 
   bool isset_success = false;
-  bool isset_found = false;
+  bool isset_boolResp1 = false;
   bool isset_intResp1 = false;
-  bool isset_version = false;
-  bool isset_key = false;
+  bool isset_intResp2 = false;
+  bool isset_intResp3 = false;
   bool isset_intResp4 = false;
-  bool isset_value = false;
+  bool isset_strResp1 = false;
   bool isset_intListResp1 = false;
   bool isset_intListResp2 = false;
 
@@ -94,8 +94,8 @@ uint32_t DoRpcResponse::read(::apache::thrift::protocol::TProtocol* iprot) {
         break;
       case 2:
         if (ftype == ::apache::thrift::protocol::T_BOOL) {
-          xfer += iprot->readBool(this->found);
-          isset_found = true;
+          xfer += iprot->readBool(this->boolResp1);
+          isset_boolResp1 = true;
         } else {
           xfer += iprot->skip(ftype);
         }
@@ -110,16 +110,16 @@ uint32_t DoRpcResponse::read(::apache::thrift::protocol::TProtocol* iprot) {
         break;
       case 4:
         if (ftype == ::apache::thrift::protocol::T_I64) {
-          xfer += iprot->readI64(this->version);
-          isset_version = true;
+          xfer += iprot->readI64(this->intResp2);
+          isset_intResp2 = true;
         } else {
           xfer += iprot->skip(ftype);
         }
         break;
       case 5:
         if (ftype == ::apache::thrift::protocol::T_I64) {
-          xfer += iprot->readI64(this->key);
-          isset_key = true;
+          xfer += iprot->readI64(this->intResp3);
+          isset_intResp3 = true;
         } else {
           xfer += iprot->skip(ftype);
         }
@@ -134,8 +134,8 @@ uint32_t DoRpcResponse::read(::apache::thrift::protocol::TProtocol* iprot) {
         break;
       case 7:
         if (ftype == ::apache::thrift::protocol::T_STRING) {
-          xfer += iprot->readBinary(this->value);
-          isset_value = true;
+          xfer += iprot->readBinary(this->strResp1);
+          isset_strResp1 = true;
         } else {
           xfer += iprot->skip(ftype);
         }
@@ -191,17 +191,17 @@ uint32_t DoRpcResponse::read(::apache::thrift::protocol::TProtocol* iprot) {
 
   if (!isset_success)
     throw TProtocolException(TProtocolException::INVALID_DATA);
-  if (!isset_found)
+  if (!isset_boolResp1)
     throw TProtocolException(TProtocolException::INVALID_DATA);
   if (!isset_intResp1)
     throw TProtocolException(TProtocolException::INVALID_DATA);
-  if (!isset_version)
+  if (!isset_intResp2)
     throw TProtocolException(TProtocolException::INVALID_DATA);
-  if (!isset_key)
+  if (!isset_intResp3)
     throw TProtocolException(TProtocolException::INVALID_DATA);
   if (!isset_intResp4)
     throw TProtocolException(TProtocolException::INVALID_DATA);
-  if (!isset_value)
+  if (!isset_strResp1)
     throw TProtocolException(TProtocolException::INVALID_DATA);
   if (!isset_intListResp1)
     throw TProtocolException(TProtocolException::INVALID_DATA);
@@ -219,28 +219,28 @@ uint32_t DoRpcResponse::write(::apache::thrift::protocol::TProtocol* oprot) cons
   xfer += oprot->writeBool(this->success);
   xfer += oprot->writeFieldEnd();
 
-  xfer += oprot->writeFieldBegin("found", ::apache::thrift::protocol::T_BOOL, 2);
-  xfer += oprot->writeBool(this->found);
+  xfer += oprot->writeFieldBegin("boolResp1", ::apache::thrift::protocol::T_BOOL, 2);
+  xfer += oprot->writeBool(this->boolResp1);
   xfer += oprot->writeFieldEnd();
 
   xfer += oprot->writeFieldBegin("intResp1", ::apache::thrift::protocol::T_I64, 3);
   xfer += oprot->writeI64(this->intResp1);
   xfer += oprot->writeFieldEnd();
 
-  xfer += oprot->writeFieldBegin("version", ::apache::thrift::protocol::T_I64, 4);
-  xfer += oprot->writeI64(this->version);
+  xfer += oprot->writeFieldBegin("intResp2", ::apache::thrift::protocol::T_I64, 4);
+  xfer += oprot->writeI64(this->intResp2);
   xfer += oprot->writeFieldEnd();
 
-  xfer += oprot->writeFieldBegin("key", ::apache::thrift::protocol::T_I64, 5);
-  xfer += oprot->writeI64(this->key);
+  xfer += oprot->writeFieldBegin("intResp3", ::apache::thrift::protocol::T_I64, 5);
+  xfer += oprot->writeI64(this->intResp3);
   xfer += oprot->writeFieldEnd();
 
   xfer += oprot->writeFieldBegin("intResp4", ::apache::thrift::protocol::T_I64, 6);
   xfer += oprot->writeI64(this->intResp4);
   xfer += oprot->writeFieldEnd();
 
-  xfer += oprot->writeFieldBegin("value", ::apache::thrift::protocol::T_STRING, 7);
-  xfer += oprot->writeBinary(this->value);
+  xfer += oprot->writeFieldBegin("strResp1", ::apache::thrift::protocol::T_STRING, 7);
+  xfer += oprot->writeBinary(this->strResp1);
   xfer += oprot->writeFieldEnd();
 
   xfer += oprot->writeFieldBegin("intListResp1", ::apache::thrift::protocol::T_LIST, 8);
@@ -275,35 +275,35 @@ uint32_t DoRpcResponse::write(::apache::thrift::protocol::TProtocol* oprot) cons
 void swap(DoRpcResponse &a, DoRpcResponse &b) {
   using ::std::swap;
   swap(a.success, b.success);
-  swap(a.found, b.found);
+  swap(a.boolResp1, b.boolResp1);
   swap(a.intResp1, b.intResp1);
-  swap(a.version, b.version);
-  swap(a.key, b.key);
+  swap(a.intResp2, b.intResp2);
+  swap(a.intResp3, b.intResp3);
   swap(a.intResp4, b.intResp4);
-  swap(a.value, b.value);
+  swap(a.strResp1, b.strResp1);
   swap(a.intListResp1, b.intListResp1);
   swap(a.intListResp2, b.intListResp2);
 }
 
 DoRpcResponse::DoRpcResponse(const DoRpcResponse& other12) {
   success = other12.success;
-  found = other12.found;
+  boolResp1 = other12.boolResp1;
   intResp1 = other12.intResp1;
-  version = other12.version;
-  key = other12.key;
+  intResp2 = other12.intResp2;
+  intResp3 = other12.intResp3;
   intResp4 = other12.intResp4;
-  value = other12.value;
+  strResp1 = other12.strResp1;
   intListResp1 = other12.intListResp1;
   intListResp2 = other12.intListResp2;
 }
 DoRpcResponse& DoRpcResponse::operator=(const DoRpcResponse& other13) {
   success = other13.success;
-  found = other13.found;
+  boolResp1 = other13.boolResp1;
   intResp1 = other13.intResp1;
-  version = other13.version;
-  key = other13.key;
+  intResp2 = other13.intResp2;
+  intResp3 = other13.intResp3;
   intResp4 = other13.intResp4;
-  value = other13.value;
+  strResp1 = other13.strResp1;
   intListResp1 = other13.intListResp1;
   intListResp2 = other13.intListResp2;
   return *this;
@@ -312,12 +312,12 @@ void DoRpcResponse::printTo(std::ostream& out) const {
   using ::apache::thrift::to_string;
   out << "DoRpcResponse(";
   out << "success=" << to_string(success);
-  out << ", " << "found=" << to_string(found);
+  out << ", " << "boolResp1=" << to_string(boolResp1);
   out << ", " << "intResp1=" << to_string(intResp1);
-  out << ", " << "version=" << to_string(version);
-  out << ", " << "key=" << to_string(key);
+  out << ", " << "intResp2=" << to_string(intResp2);
+  out << ", " << "intResp3=" << to_string(intResp3);
   out << ", " << "intResp4=" << to_string(intResp4);
-  out << ", " << "value=" << to_string(value);
+  out << ", " << "strResp1=" << to_string(strResp1);
   out << ", " << "intListResp1=" << to_string(intListResp1);
   out << ", " << "intListResp2=" << to_string(intListResp2);
   out << ")";

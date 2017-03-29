@@ -23,8 +23,8 @@ public:
             {
                 // arguments: none
                 // allocate space in return buffer
-                response.value.resize(sizeof(T));
-                T &obj = *(T *) (response.value.data());
+                response.strResp1.resize(sizeof(T));
+                T &obj = *(T *) (response.strResp1.data());
 
                 // TODO: we need to change TWrapped / TransProxy to not use a transaction,
                 // so that we can use the usual read() method instead of this loop
@@ -41,7 +41,7 @@ public:
                         return;
                     }
                     if (v1 == v2) {
-                        response.version = (int64_t) v1.value();
+                        response.intResp1 = (int64_t) v1.value();
 			response.success = true;
                         return;
                     }
@@ -70,8 +70,8 @@ public:
             TThread::client(server)->do_rpc(resp, args);
             if (!resp.success)
                 Sto::abort();
-            item.add_read((version_type) resp.version);
-            read_type &obj = *(T *) (resp.value.data());
+            item.add_read((version_type) resp.intResp1);
+            read_type &obj = *(T *) (resp.strResp1.data());
             return obj;
         }
     }
